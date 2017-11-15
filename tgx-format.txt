@@ -1,0 +1,237 @@
+3854359821 // The Number
+// https://lowlidev.io/destiny/api/gearasset/3854359821?destiny2
+{
+	gearAsset: {
+		content: [
+			{
+				platform: "mobile", // web/mobile
+				dye_index_set: {
+					geometry: [],
+					textures: [],
+					shaders: [], // ?
+				},
+				region_index_sets: {
+					// 0, 1, 2, 3, 4, 5, 21
+					0: [
+						{
+							geometry: []
+							textures: []
+						}
+					]
+				},
+				female_index_set: { // Armor only
+					geometry: [],
+					textures: []
+				},
+				male_index_set: { // Armor only
+					geometry: [],
+					textures: []
+				}
+				geometry: [], // tgxm
+				textures: [], // tgxm.bin
+				plate_regions: [] // png/jpg Pre-plated textures for web
+			}
+		],
+		gear: [
+			"6fee133e5ce9290b347c684faeb02b04.js" // json
+		]
+	},
+	requestedId: "" // ItemHash
+}
+
+// gear.js
+// https://www.bungie.net/common/destiny2_content/geometry/gear/6fee133e5ce9290b347c684faeb02b04.js
+{
+	art_content: {
+		// arrangement
+	},
+	art_content_sets: [
+		{
+			arrangement: {
+				hash: 3854359821,
+				gear_set: {
+					base_art_arrangement: {
+						hash: 2166136261
+					},
+					female_override_art_arrangement: {
+						hash: 2166136261
+					},
+					regions: [
+						{
+							region_index: 0,
+							pattern_list: [
+								{
+									hash: 871449913,
+									geometry_hashes: [
+										"2555317684-0"
+									]
+								}
+							]
+						}
+					]
+				}
+			},
+			classHash: 0
+		}
+	],
+	custom_dyes: [],
+	default_dyes: [
+		{
+			cloth: false,
+			hash: 3006584958,
+			investment_hash: 767050366,
+			material_properties: {
+				// Destiny 2
+				detail_diffuse_transform: [0.3, 0.3, 0, 0], // sx, sy, tx, ty
+				detail_normal_transform: [0.75, 0.75, 0, 0], // sx, sy, tx, ty
+				emissive_pbr_params: [0, 0, 0, 0],
+				emissive_tint_color_and_intensity_bias: [1, 0.12, 0, 0.61],
+				lobe_pbr_params: [0.55, 0.3, 0.92, 0],
+				primary_albedo_tint: [0.01, 0.01, 0.03, 1], // rgba
+				primary_material_params: [0.3, 0.05, 0.1, 0],
+				primary_roughness_remap: [-1, 3.25, 0.7, 0.2],
+				secondary_albedo_tiny: [0.02, 0.02, 0.02, 1], // rgba
+				secondary_material_params: [0, 0, 0.1, 0],
+				secondary_roughness_remap: [-5.88, 14.7, 0.5, 0.17],
+				spec_aa_xform: [1.99, -1, 0.4, 0],
+				specular_properties: [0, 0, 1, 0],
+				subsurface_scattering_strength_and_emissive: [32.3, 1, 2, 0],
+				tint_pbr_params: [0.18, 0, 0, 1.23],
+				wear_remap: [-0.8, 4.3, 0, 1],
+				worn_albedo_tint: [0.61, 0.61, 0.61, 1], // rgba
+				worn_material_parameters: [0, 0, 1, 1],
+				worn_roughness_remap: [-1, 1.2, 0.45, 0.25]
+			},
+			slot_type_index: 0,
+			textures: {
+				diffuse: {
+					name: "327503503_digital_camo_14_dif",
+					reference_id: "470ba6cd7e38916975539f9897c76383"
+				},
+				normal: {},
+				primary_diffuse: {},
+				secondary_diffuse: {}
+			}
+		}
+	],
+	locked_dyes: [],
+	reference_id: "3854359821"
+}
+
+// TGXBin container format
+tgxBin {
+	string[4] magic, // TGXM
+	int32 version,
+	int32 fileOffset,
+	int32 fileCount,
+	string[256] fileIdentifier,
+	tgxBinFile[fileCount] files
+}
+tgxBinFile {
+	string[256] name,
+	int32 offset,
+	int32 unknown, // Always 0?
+	int32 size,
+	byte[size] data
+}
+
+// render_metadata.js
+{
+	render_model: {
+		render_meshes: [
+			{
+				bounding_volume: {
+					min_x: 0,
+					max_x: 0,
+					min_y: 0,
+					max_y: 0,
+					min_z: 0,
+					max_z: 0
+				},
+				index_buffer: {
+					file_name: "0.indexbuffer.tgx",
+					byte_size: 22,
+					value_byte_size: 2
+				},
+				position_offset: [0, 0, 0], // xyz
+				position_scale: [0.1, 0.1, 0.1], // xyz
+				stage_part_list: [
+					{
+						external_identifier: 0,
+						flags: 20,
+						gear_dye_change_color_index: 0,
+						index_count: 4,
+						index_max: 3,
+						index_min: 0,
+						lod_category: {
+							value: 8,
+							name: "_log_category_23
+						},
+						lod_run: 1,
+						primitive_type: 5,
+						shader: {
+							static_textures: [],
+							type: 7
+						},
+						start_index: 1,
+						variant_shader_index: -1
+					}
+				],
+				stage_part_offsets: [],
+				stage_part_vertex_stream_layout_definitions: [
+					{
+						type: "_vertex_stream_layout_ao_precise_optimize_tangent",
+						formats: [
+							{
+								stride: 16,
+								elements: [
+									offset: 0,
+									semantic: "_tfx_vb_semantic_position",
+									sementic_index: 0,
+									size: 16,
+									type: "_vertex_format_attribute_float4",
+									normalized: false
+								]
+							}
+						]
+					}
+				],
+				stage_part_vertex_stream_layout_lookup: [],
+				texcoord0_scale_offset: [0.5, 0.5, 0.5, 0.5], // sx, sy, tx, ty
+				texcoord_offset: [0.5, 0.5], // tx, ty
+				texcoord_scale: [0.5, 0.5], // sx, sy
+				vertex_buffers: [
+					{
+						file_name: "0.0.vertexbuffer.tgx",
+						byte_size: 128,
+						stride_byte_size: 16
+					}
+				]
+			}
+		]
+	},
+	texture_plates: [
+		gear_decal_dye_index: -1,
+		gear_slot_requires_plating: true,
+		number_of_gear_slots: 0,
+		number_of_plateable_gear_slots: 0,
+		plate_set: {
+			diffuse: {
+				plate_index: 2,
+				plate_size: [256, 256],
+				reference_id: "da3cb484aa64b215cf9e5ba6fdc28100",
+				texture_placements: [
+					{
+						texture_size_x: 192,
+						texture_size_y: 128,
+						position_x: 0,
+						position_y: 0,
+						texture_tag_name: "3532015694_ar01_omolon_stock_a_gbit_192_128_0"
+					}
+				]
+			},
+			gearstack: {},
+			normal: {}
+		}
+	]
+}
