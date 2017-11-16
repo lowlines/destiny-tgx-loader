@@ -3510,21 +3510,37 @@ Spasm.GearRenderable.prototype.setGearShaders = function(n) {
     for (Spasm.assertInstance(n, Spasm.GearShader), this.gearShaders = n, i = this.renderableModels, r = i.length, t = 0; t < r; t++) u = i[t], u.setGearShaders(n)
 };
 Spasm.GearRenderable.prototype.getResolvedDyeList = function(n, t) {
-    var r, o, s, v, u, h, y, f, c, e, b, k;
+    var r, defaultDye, customDyes, customDyesLength, u, customDye, lockedDyesLength, f, lockedDye, e, resolvedDyeSlot, resolvedDye;
     Spasm.assertValid(n);
-    var l = n.defaultDyes,
-        a = n.lockedDyes,
-        i = {},
-        d = l.length;
-    for (r = 0; r < d; r++) o = l[r], i[o.slotTypeIndex] = o;
+    var defaultDyes = n.defaultDyes,
+        lockedDyes = n.lockedDyes,
+        resolvedDyes = {},
+        defaultDyesLength = defaultDyes.length;
+    for (r = 0; r < defaultDyesLength; r++) {
+        defaultDye = defaultDyes[r],
+        resolvedDyes[defaultDye.slotTypeIndex] = defaultDye;
+    }
     if (t)
-        for (Spasm.assertValid(t), s = t.customDyes, v = s.length, u = 0; u < v; u++) h = s[u], i[h.slotTypeIndex] = h;
-    for (y = a.length, f = 0; f < y; f++) c = a[f], i[c.slotTypeIndex] = c;
-    var p = Object.keys(i),
-        g = p.length,
-        w = [];
-    for (e = 0; e < g; e++) b = p[e], k = i[b], w.push(k);
-    return w
+        for (Spasm.assertValid(t),
+                 customDyes = t.customDyes,
+                 customDyesLength = customDyes.length,
+                 u = 0; u < customDyesLength; u++) {
+            customDye = customDyes[u],
+            resolvedDyes[customDye.slotTypeIndex] = customDye;
+        }
+    for (lockedDyesLength = lockedDyes.length, f = 0; f < lockedDyesLength; f++) {
+        lockedDye = lockedDyes[f],
+        resolvedDyes[lockedDye.slotTypeIndex] = lockedDye;
+    }
+    var resolvedDyeSlots = Object.keys(resolvedDyes),
+        resolvedDyeSlotsLength = resolvedDyeSlots.length,
+        resolvedDyeList = [];
+    for (e = 0; e < resolvedDyeSlotsLength; e++) {
+        resolvedDyeSlot = resolvedDyeSlots[e],
+        resolvedDye = resolvedDyes[resolvedDyeSlot],
+        resolvedDyeList.push(resolvedDye);
+    }
+    return resolvedDyeList
 };
 Spasm.GearRenderable.prototype.setGearDyes = function(n) {
     var t, r;

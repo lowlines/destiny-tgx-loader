@@ -727,14 +727,15 @@ Object.assign(THREE.TGXLoader.prototype, {
 						}
 						for (var p=0; p<region.pattern_list.length; p++) {
 							var pattern = region.pattern_list[p];
-							var patternIndex = regionIndexSet[p];
+							//var patternIndex = regionIndexSet[p];
 
-							var patternTextures = [];
-							for (var t=0; t<patternIndex.textures.length; t++) {
-								var textureIndex = patternIndex.textures[t];
-								var texture = assetIndexSet[0].textures[textureIndex];
-								patternTextures.push(texture);
-							}
+							// TODO Figure out why this breaks on some models
+							//var patternTextures = [];
+							//for (var t=0; t<patternIndex.textures.length; t++) {
+							//	var textureIndex = patternIndex.textures[t];
+							//	var texture = assetIndexSet[0].textures[textureIndex];
+							//	patternTextures.push(texture);
+							//}
 
 							artRegionPatterns.push({
 								hash: pattern.hash,
@@ -742,7 +743,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 								patternIndex: p,
 								regionIndex: region.region_index,
 								geometry: pattern.geometry_hashes,
-								textures: patternTextures
+								//textures: patternTextures
 							});
 
 							//console.log('Pattern['+u+':'+p+']', pattern, patternTextures);
@@ -1133,16 +1134,19 @@ Object.assign(THREE.TGXLoader.prototype, {
 					if (!checkRenderPart(part)) continue;
 					partCount++;
 
-					if (gearDyeSlotOffsets[part.gearDyeSlot] == undefined) {
-						console.warn('MissingDefaultDyeSlot', part.gearDyeSlot);
+					var gearDyeSlot = part.gearDyeSlot;
+
+					if (gearDyeSlotOffsets[gearDyeSlot] == undefined) {
+						console.warn('MissingDefaultDyeSlot', gearDyeSlot);
+						gearDyeSlot = 0;
 					}
-					var materialIndex = gearDyeSlotOffsets[part.gearDyeSlot]+(part.usePrimaryColor ? 0 : 1);
+					var materialIndex = gearDyeSlotOffsets[gearDyeSlot]+(part.usePrimaryColor ? 0 : 1);
 
 					//console.log('RenderMeshPart['+geometryHash+':'+m+':'+p+']', part);
 
 					// Load Material
 					if (loadTextures) {
-						var material = parseMaterial(part, gearDyes[part.gearDyeSlot], geometryTextures[geometryHash]);
+						var material = parseMaterial(part, gearDyes[gearDyeSlot], geometryTextures[geometryHash]);
 
 						if (material) {
 							material.name = geometryHash+'-CustomShader'+m+'-'+p;
@@ -1180,6 +1184,11 @@ Object.assign(THREE.TGXLoader.prototype, {
 						for (var j=0; j<3; j++) {
 							var index = indexBuffer[faceIndex+tri[j]];
 							var vertex = vertexBuffer[index];
+							if (!vertex) { // Verona Mesh
+								console.warn('MissingVertex['+index+']');
+								i=count;
+								break;
+							}
 							var normal = vertex.normal0;
 							var uv = vertex.texcoord0;
 							var color = vertex.color0;
@@ -2087,7 +2096,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 			var gearDyeGroups = getGearDyes(gear);
 			var shaderDyeGroups = shaderGear ? getGearDyes(shaderGear) : gearDyeGroups;
 
-			//console.log('GearDyes', gearDyeGroups);
+			console.log('GearDyes', gearDyeGroups);
 			//console.log('ShaderGearDyes', shaderDyeGroups);
 
 			// Spasm.GearRenderable.prototype.getResolvedDyeList
@@ -2109,8 +2118,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 				}
 				for (var j=0; j<dyes.length; j++) {
 					var dye = dyes[j];
-					if (dyeType == 'lockedDyes' && ignoreLockedDyes && resolvedDyes[dye.slotTypeIndex]) continue;
-					resolvedDyes[dye.slotTypeIndex] = dye;
+					//if (dyeType == 'lockedDyes' && ignoreLockedDyes && resolvedDyes[dye.slotTypeIndex]) continue;
+					//resolvedDyes[dye.slotTypeIndex] = dye;
+					resolvedDyes[j] = dye;
 				}
 			}
 
