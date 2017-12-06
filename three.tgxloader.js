@@ -2457,7 +2457,8 @@ Object.assign(THREE.TGXLoader.prototype, {
 				var stagesToRender = [0, 7, 15]; // Hardcoded?
 				var partOffsets = [];
 
-				for (var i=0; i<renderMesh.stage_part_list.length; i++) {
+				var partLimit = renderMesh.stage_part_offsets[4];//renderMesh.stage_part_list.length;
+				for (var i=0; i<partLimit; i++) {
 					partOffsets.push(i);
 				}
 
