@@ -1366,7 +1366,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 				//	materialParams.useDye = false;
 				//	console.warn('NoDye', part, gearDye);
 				//}
-				console.warn('SlotTypeIndex', gearDye.slotTypeIndex);
+				//console.warn('SlotTypeIndex', gearDye.slotTypeIndex);
+
+				//
 
 				if (part.flags & 0x8) {
 					//materialParams.useDye = true;
@@ -1390,6 +1392,12 @@ Object.assign(THREE.TGXLoader.prototype, {
 					//textures.normalMap = null;
 					//textures.gearstackMap = null;
 
+				}
+
+				// Worldline Zero hack fix
+				if (materialParams.primaryColor.r == 1 && materialParams.primaryColor.g == 0 && materialParams.primaryColor.b == 0) {
+					materialParams.useDye = false;
+					materialParams.useAlphaTest = false;
 				}
 
 
