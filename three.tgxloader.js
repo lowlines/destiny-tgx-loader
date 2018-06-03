@@ -601,12 +601,15 @@ Object.assign(THREE.TGXLoader.prototype, {
 					var skipSet = false;
 					// regionKeysToNotLoad
 					//switch(parseInt(setIndex)) {
-					//	//case 2: // hud
+					//	case 2: // hud
+					//	//case 4:
+					//	case 3:
 					//	case 6: // ammo
 					//	case 21: // reticle
 					//		skipSet = true;
 					//		break;
 					//	default:
+					//		console.warn('RegionSetIndex', setIndex);
 					//		break;
 					//}
 					if (skipSet) continue;
@@ -709,6 +712,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						var texture = content.textures[textureIndex];
 						loadTexture(texture, false, function(textureData) {
 							contentRegions.textures[textureIndex] = textureData.referenceId;
+
 							assetLoadCount++;
 							checkContentLoaded();
 						});
@@ -943,7 +947,8 @@ Object.assign(THREE.TGXLoader.prototype, {
 			defaultMaterial = new THREE.MeshLambertMaterial({
 				emissive: 0x444444,
 				color: 0x777777,
-				shading: THREE.FlatShading,
+				//shading: THREE.FlatShading,
+				flatShading: true,
 				side: THREE.DoubleSide,
 				skinning: hasBones
 			});
@@ -1077,7 +1082,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 					case -1: // armor (no region)
 					case 0: // weapon grip
 					case 1: // weapon body
-					//case 2: // ??
+					//case 2: // Khvostov 7G-0X?
 					case 3: // weapon scope
 					case 4: // weapon stock/scope?
 					case 5: // weapon magazine
@@ -1091,7 +1096,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						break;
 
 					case 21: // hud
-						skipRegion = true;
+						//skipRegion = true;
 						break;
 
 					case 22: // sparrow wings
@@ -1103,6 +1108,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						break;
 					default:
 						console.warn('UnknownArtRegion['+a+']', artRegionPattern.regionIndex);
+						skipRegion = true;
 						break;
 				}
 				if (skipRegion) continue;
@@ -1162,7 +1168,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 					var metadata = tgxBin.metadata;
 					var texturePlates = metadata.texture_plates;
 
-					//console.log('Metadata['+g+']', tgxBin);
+					//console.log('Metadata['+geometryHash+']', tgxBin);
 
 					// Spasm.TGXAssetLoader.prototype.getGearRenderableModel
 					//console.log('TexturePlates['+g+']', texturePlates);
@@ -1176,6 +1182,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						for (var texturePlateId in texturePlateSet) {
 							var texturePlate = texturePlateSet[texturePlateId];
 							var texturePlateRef = texturePlateId+'_'+texturePlate.plate_index;
+							//var texturePlateRef = geometryHash+'_'+texturePlateId+'_'+texturePlate.plate_index;
 
 							var textureId = texturePlateId;
 							switch(texturePlateId) {
@@ -1310,15 +1317,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 						shouldRender = true;
 					//}
 					break;
-				case 8: // HUD / Low poly geometries
-					//if (!(part.flags & 0x10)) { // HUD
-						shouldRender = false;
-					//}
-
-					break;
-
 				case 4: // LOD 1: Low poly geometries
 				case 7: // LOD 2: Low poly geometries
+				case 8: // HUD / Low poly geometries
 				case 9: // LOD 3: Low poly geometries
 					shouldRender = false;
 					break;
@@ -1389,6 +1390,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						//var material = new THREE.MeshPhongMaterial(materialParams);
 						material.name = geometryHash+'-'+(j == 0 ? 'Primary' : 'Secondary')+i;
 						materials.push(material);
+						//console.log('MaterialName:'+material.name);
 					}
 				}
 			}
@@ -1420,6 +1422,18 @@ Object.assign(THREE.TGXLoader.prototype, {
 					var part = parts[p];
 
 					if (!checkRenderPart(part)) continue;
+
+					// Ghost Shell Eye Bg
+					//if (m != 0) continue;
+					//if (p != 3) continue;
+
+					//if (m != 0) continue;
+					//if (p <6) continue;
+
+					// Phoenix Strife Type 0 - Feathers
+					//if (m != 1 && p != 1) continue;
+
+					console.log('RenderMeshPart['+geometryHash+':'+m+':'+p+']', part);
 					partCount++;
 
 					var gearDyeSlot = part.gearDyeSlot;
@@ -1434,12 +1448,19 @@ Object.assign(THREE.TGXLoader.prototype, {
 
 					// Load Material
 					if (loadTextures) {
-						var material = parseMaterial(part, gearDyes[gearDyeSlot], geometryTextures[geometryHash]);
+						var textures = geometryTextures[geometryHash];
+						if (!textures) {
+							//console.warn('NoGeometryTextures['+geometryHash+']', part);
+						} else {
+							//continue;
+						}
+						var material = parseMaterial(part, gearDyes[gearDyeSlot], textures);
 
 						if (material) {
 							material.name = geometryHash+'-CustomShader'+m+'-'+p;
 							materials.push(material);
 							materialIndex = materials.length-1;
+							//console.log('MaterialName['+materialIndex+']:'+material.name);
 						}
 					}
 
@@ -1519,7 +1540,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						geometry.faceVertexUvs[0].push(faceVertexUvs);
 
 						if (geometry.faceVertexUvs.length < 2) geometry.faceVertexUvs.push([]);
-						geometry.faceVertexUvs[1].push(detailVertexUvs);
+						//geometry.faceVertexUvs[1].push(detailVertexUvs);
 					}
 				}
 
@@ -1590,7 +1611,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 			}
 		}
 
-		function parseMaterial(part, gearDye, textures) {
+		function parseMaterial(part, gearDye, geometryTextures) {
 			var materialParams = {
 				game: game,
 				//side: THREE.DoubleSide,
@@ -1604,10 +1625,192 @@ Object.assign(THREE.TGXLoader.prototype, {
 				usePrimaryColor: part.usePrimaryColor
 			};
 
+			var textureLookup = [];
+
+			// Use these for debugging
+			var color = 0x333333;
+			var emissive = new THREE.Color(Math.random(), Math.random(), Math.random());
+
+			if (part.variantShaderIndex != -1) console.warn('VariantShaderPresent['+part.variantShaderIndex+']', part);
+
+			var textures = {
+				map: null,
+				normalMap: null,
+				gearstackMap: null,
+				envMap: null
+			};
+			for (var textureId in geometryTextures) {
+				textures[textureId] = geometryTextures[textureId];
+			}
+
+			if (part.shader) {
+				var shader = part.shader;
+				var staticTextureIds = shader.staticTextures ? shader.staticTextures : [];
+				var staticTextureCount = staticTextureIds.length;
+
+				copyGearDyeParams(gearDye, materialParams);
+
+				//if (!(part.flags & 0x1)) {
+				//	materialParams.useDye = false;
+				//	console.warn('NoDye', part, gearDye);
+				//}
+				console.warn('SlotTypeIndex', gearDye.slotTypeIndex);
+
+				if (part.flags & 0x8) {
+					//materialParams.useDye = true;
+					materialParams.useAlphaTest = true;
+					console.warn('AlphaTest', part, gearDye);
+				}
+
+				if (part.flags & 0x4) {
+					//materialParams.emissive = emissive;
+				}
+
+				if (part.flags & ~(0x8|0x10|0x5)) {
+					console.warn('UnknownFlags', part.flags);
+				}
+
+				if (part.flags & 0x20) {
+					//materialParams.color = color;
+					//materialParams.emissive = emissive;
+					//materialParams.color = 0xff0000;
+					//textureLookup.push('map');
+					//textures.normalMap = null;
+					//textures.gearstackMap = null;
+
+				}
+
+
+				for (var i=0; i<staticTextureIds.length; i++) {
+					var staticTextureId = staticTextureIds[i];
+					var staticTextureContent = contentLoaded.textures[staticTextureId];
+					if (!staticTextureContent) {
+						console.warn('MissingTexture['+staticTextureId+']');
+						//continue;
+					}
+					var staticTexture = staticTextureContent ? staticTextureContent.texture : null;
+					logTexture('staticTexture'+i+(textureLookup[i] !== undefined ? '['+textureLookup[i]+']' : ''), staticTexture);
+				}
+
+				var skipShader = false;
+
+				switch(shader.type) {
+					case 7:
+						for (var textureId in textures) {
+							materialParams[textureId] = textures[textureId];
+						}
+
+						if (staticTextureIds.length > 0) {
+							console.warn('StaticTexturesFound', staticTextureIds);
+						}
+
+						if (part.flags & 0x10) {
+							//materialParams.color = color;
+							//materialParams.emissive = emissive;
+							//textures.map = null;
+							//textures.normalMap = null;
+							//textures.gearstackMap = null;
+
+							switch(staticTextureIds.length) {
+								case 1:
+									textureLookup.push('cubeMap');
+									break;
+								//case 2:
+								//	materialParams.map = null;
+								//	textures.normalMap = null;
+								//	materialParams.gearstackMap = null;
+								//	textureLookup.push('detailEnvMap');
+								//	textureLookup.push('cubeMap');
+								//	break;
+								case 3:
+									materialParams.map = null;
+									materialParams.normalMap = null;
+									materialParams.gearstackMap = null;
+									textureLookup.push('map');
+									textureLookup.push('map2');
+									textureLookup.push('cubeMap');
+									break;
+							}
+
+							for (var i=0; i<textureLookup.length; i++) {
+								var textureId = textureLookup[i];
+
+								var staticTextureId = staticTextureIds[i];
+								var staticTextureContent = contentLoaded.textures[staticTextureId];
+
+								console.warn(textureId+'Texture', staticTextureContent ? staticTextureContent.referenceId : staticTextureContent);
+
+							}
+
+							//var staticTextureId = staticTextureIds[staticTextureIds.length-1];
+							//var staticTextureContent = contentLoaded.textures[staticTextureId];
+							//
+							//console.warn('CubeMapTexture', staticTextureContent ? staticTextureContent.referenceId : staticTextureContent);
+							//textureLookup.push('cubeMap');
+						}
+						break;
+					//case 8:
+					//	for (var textureId in textures) {
+					//		materialParams[textureId] = textures[textureId];
+					//	}
+					//	break;
+					default:
+						console.warn('UnknownShader', shader, part, gearDye);
+						skipShader = true;
+						break;
+				}
+
+				if (!skipShader) {
+					for (var i=0; i<textureLookup.length; i++) {
+						var textureId = textureLookup[i];
+						var staticTextureId = staticTextureIds[i];
+						var staticTextureContent = contentLoaded.textures[staticTextureId];
+						if (!staticTextureContent) {
+							console.warn('MissingTexture['+staticTextureId+']');
+							//continue;
+						}
+						var staticTexture = staticTextureContent ? staticTextureContent.texture : null;
+						switch(textureId) {
+							case 'alphaMap':
+								materialParams.transparent = true;
+								break;
+							case 'cubeMap':
+								staticTexture = loadCubeTexture(staticTexture);
+								textureId = 'envMap';
+								break;
+						}
+						materialParams[textureId] = staticTexture;
+					}
+
+					//console.log('MaterialParams', materialParams);
+
+					return new THREE.TGXMaterial(materialParams);
+				}
+			} else {
+				console.warn('NoShader', part);
+			}
+
+			return false;
+		}
+
+		function parseMaterialOld(part, gearDye, textures) {
+			var materialParams = {
+				game: game,
+				side: THREE.DoubleSide,
+				//overdraw: true,
+				skinning: hasBones,
+				//color: 0x777777,
+				//emissive: 0x444444,
+				//envMap: dyeMaterial.envMap ? dyeMaterial.envMap : null,
+				//metalness: ,
+				envMap: null,
+				usePrimaryColor: part.usePrimaryColor,
+				useAlphaTest: (part.flags & 0x8) != 0
+			};
+
 			if (part.variantShaderIndex != -1) console.warn('VariantShaderPresent['+part.variantShaderIndex+']', part);
 
 			if (!textures) {
-				console.warn('NoGeometryTextures', part);
 				textures = {
 					map: null,
 					normalMap: null,
@@ -1633,18 +1836,167 @@ Object.assign(THREE.TGXLoader.prototype, {
 				var textureLookup = [];
 
 				//var dyeColor = dyeMaterial.usePrimaryColor ? dyeMaterial.primaryColor : dyeMaterial.secondaryColor;
-				console.log('Shader', shader, utils.bits(part.flags, 16)+' ('+part.flags+')');
+				console.log('Shader', shader, utils.bits(part.flags, 16)+' ('+part.flags+')', 'LOD Category', part.lodCategory);
 
 				if (part.flags & 0x20) {
-					materialParams.transparent = true;
-					materialParams.useAlphaTest = true;
+					//materialParams.transparent = true;
+					//materialParams.useAlphaTest = true;
 					//materialParams.transparent = true;
 					//materialParams.useAlphaTest = true;
 					//materialParams.emissive = emissive;
 					//override = true;
 				}
 
+				//if (shader.type == 8) {
+				//	copyGearDyeParams(gearDye, materialParams);
+				//	//materialParams.color = color;
+				//	//materialParams.emissive = emissive;
+				//	log = true;
+				//	override = true;
+				//
+				//	if (part.flags & 0x10) {
+				//		textureLookup.push('unknownMap');
+				//		textureLookup.push('map');
+				//	}
+				//}
+				//
+				//if (shader.type == 9) {
+				//	//materialParams.envMap = null;
+				//	copyGearDyeParams(gearDye, materialParams);
+				//	materialParams.color = color;
+				//	materialParams.emissive = emissive;
+				//	//log = true;
+				//	//override = true;
+				//}
+
+				// TODO I have no idea what these flags are for...
+				//if (!(part.flags & 0x1)) {
+				//	materialParams.color = color;
+				//	materialParams.emissive = 0x00ff00;
+				//	override = true;
+				//}
+				//if (!(part.flags & 0x4)) {
+				//	materialParams.color = color;
+				//	materialParams.emissive = 0xff00ff;
+				//	override = true;
+				//}
+				//if (!(part.flags & 0x5)) {
+				//	materialParams.color = color;
+				//	materialParams.emissive = 0xffff00;
+				//	override = true;
+				//}
+				copyGearDyeParams(gearDye, materialParams);
+				for (var textureId in textures) {
+					//materialParams[textureId] = textures[textureId];
+				}
+				if (part.flags & 0x8) {
+					// It Stared Back
+					//copyGearDyeParams(gearDye, materialParams);
+					//materialParams.color = color;
+					//materialParams.emissive = 0x00ffff;
+					//override = true;
+					//log = true;
+					//textureLookup.push('cubeMap2');
+					//materialParams.transparent = true;
+					materialParams.useAlphaTest = true;
+				}
+				if (part.flags & 0x10) {
+					//materialParams.map = textures.map;
+					//materialParams.normalMap = textures.normalMap;
+					//materialParams.gearstackMap = textures.gearstackMap;
+					//materialParams.color = materialParams.usePrimaryColor ? materialParams.primaryColor : materialParams.secondaryColor;
+					//materialParams.emissive = 0x0000ff;
+					//materialParams.transparent = true;
+					//materialParams.useAlphaTest = true;
+					if (staticTextureCount > 0) {
+						//materialParams.emissive = 0xff00ff;
+					}
+					//override = true;
+					//log = true;
+				}
+				if (part.flags & 0x20) { // Decal
+					//materialParams.color = color;
+					//materialParams.emissive = 0x00ff00;
+					//override = true;
+					//log = true;
+				}
+				if (part.flags & 0x40) {
+					//materialParams.color = color;
+					//materialParams.emissive = 0xff0000;
+					//override = true;
+					//log = true;
+				}
+
+				//for (var textureId in textures) {
+				//	var texture = textures[textureId];
+				//	if (!texture) continue;
+				//	console.log("\t"+textureId+':', texture.name);
+				//}
+
+				//if (part.lodCategory.value == 2) {
+				//	materialParams.color = color;
+				//	materialParams.emissive = 0xff0000;
+				//	override = true;
+				//	log = true;
+				//}
+
+				log = true;
+
 				switch(shader.type) {
+					case 7:
+						if (part.flags & 0x20|0x40) { // Decal
+							//materialParams.color = color;
+							//materialParams.emissive = emissive;
+							//override = true;
+							switch(staticTextureCount) {
+								case 1:
+									materialParams.useDecal = true;
+									textureLookup.push('map');
+									break;
+							}
+						}
+						else if (part.flags & 0x10) { // Glow Decal?
+							//override = true;
+							materialParams.useDecal = true;
+							//textureLookup.push('map');
+							//textureLookup.push('alphaMap');
+							//textureLookup.push('decalGlowMap');
+							//textureLookup.push('decalGlowMap');
+							//textureLookup.push('decalGlowMap');
+							materialParams.color = color;
+							materialParams.emissive = emissive;
+						} else {
+							switch(staticTextureCount) {
+								case 1:
+
+									break;
+								case 3:
+									textureLookup.push('map');
+									textureLookup.push('gearstackMap');
+									textureLookup.push('normalMap');
+									//override = true;
+									materialParams.useDetail = false;
+									break;
+								case 5:
+									//textureLookup.push('detailMap');
+									//textureLookup.push('map');
+									//textureLookup.push('gearstackMap');
+									//textureLookup.push('normalMap');
+									//textureLookup.push('detailNormalMap');
+									 textureLookup.push('map');
+									textureLookup.push('detailMap');
+									textureLookup.push('normalMap');
+									textureLookup.push('detailNormalMap');
+									textureLookup.push('scratchMap');
+									//override = true;
+									break;
+							}
+						}
+						break;
+				}
+
+				switch(/*shader.type*/-1) {
+					case -1: break;
 					case 7:
 						materialParams.map = textures.map;
 						materialParams.normalMap = textures.normalMap;
@@ -1652,7 +2004,10 @@ Object.assign(THREE.TGXLoader.prototype, {
 						materialParams.envMap = textures.envMap;
 						copyGearDyeParams(gearDye, materialParams);
 						override = staticTextureCount > 0;
-						log = true;
+
+						materialParams.useAlphaTest = (part.flags & 0x8) != 0;
+
+						//log = true;
 
 						switch(staticTextureCount) {
 							case 0:
@@ -1665,8 +2020,8 @@ Object.assign(THREE.TGXLoader.prototype, {
 								break;
 							case 1:
 								if (part.flags & 0x40) {
-									materialParams.map = false;
-									materialParams.normalMap = false;
+									materialParams.map = null;
+									materialParams.normalMap = null;
 									materialParams.gearstackMap = null;
 									textureLookup.push('detailDecalMap');
 									override = true;
@@ -1677,19 +2032,29 @@ Object.assign(THREE.TGXLoader.prototype, {
 									textureLookup.push('detailDecalMap');
 									log = true;
 								}
+								else if (part.flags & 0x10) { // PinLight/Glow?
+									// The Bandwagon
+									materialParams.map = null;
+									materialParams.normalMap = null;
+									materialParams.gearstackMap = null;
+									textureLookup.push('map');
+									//materialParams.emissive = 0x00ff00;
+									//log = true;
+								}
 								else /*if (part.flags & 0x10)*/ { // Cubemap
 									//materialParams.map = false;
 									//materialParams.normalMap = false;
 									//materialParams.gearstackMap = null;
 									//textureLookup.push('cubeMap');
 									//override = true;
+									log = true;
 								}
 								//else {
 								//	materialParams.color = color;
 									//materialParams.emissive = emissive;
 								//	log = true;
 								//}
-								log = true;
+								//log = true;
 								break;
 							case 2:
 								override = true;
@@ -1786,8 +2151,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 					case 8: // EmissiveMap
 						// Vex Mythoclast
 						//copyGearDyeParams(gearDye, materialParams);
-						materialParams.color = color;
-						materialParams.emissive = 0xffffff;//emissive;
+						//materialParams.color = color;
+						//materialParams.emissive = 0xffffff;//emissive;
+						//materialParams.emissive = this.usePrimaryColor ? this.primaryColor : this.secondaryColor;
 						//materialParams.emissiveIntensity = 1;
 						switch(staticTextureCount) {
 							case 0:
@@ -1796,6 +2162,11 @@ Object.assign(THREE.TGXLoader.prototype, {
 								break;
 							case 1:
 								textureLookup.push('emissiveMap');
+								break;
+							case 2:
+								textureLookup.push('alphaMap');
+								materialParams.useAlphaTest = true;
+								materialParams.transparent = true;
 								break;
 							default:
 								console.warn('UnknownShaderTypeLength', shader);
@@ -1927,8 +2298,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 				//	materialParams.color = color;
 				//	materialParams.emissive = emissive;
 				//} else {
-					log = false;
+					//log = false;
 				if (!debugMode) {
+					log = false;
 					override = false;
 				}
 				//}
@@ -1942,12 +2314,13 @@ Object.assign(THREE.TGXLoader.prototype, {
 						"\n\tGearDye:", gearDye,
 						"\n\tTextures:", textures
 					);
-					console.log(
-						"%c #"+new THREE.Color(gearDye.primaryColor).getHexString()
-						+" %c #"+new THREE.Color(gearDye.secondaryColor).getHexString(),
-						"border-left: 14px solid #"+new THREE.Color(gearDye.primaryColor).getHexString()+';',
-						"border-left: 14px solid #"+new THREE.Color(gearDye.secondaryColor).getHexString()+';'
-					);
+					logColors([gearDye.primaryColor, gearDye.secondaryColor, gearDye.wearColor]);
+					//console.log(
+					//	"%c #"+new THREE.Color(gearDye.primaryColor).getHexString()
+					//	+" %c #"+new THREE.Color(gearDye.secondaryColor).getHexString(),
+					//	"border-left: 14px solid #"+new THREE.Color(gearDye.primaryColor).getHexString()+';',
+					//	"border-left: 14px solid #"+new THREE.Color(gearDye.secondaryColor).getHexString()+';'
+					//);
 
 					for (var i=0; i<staticTextureIds.length; i++) {
 						var staticTextureId = staticTextureIds[i];
@@ -1982,9 +2355,10 @@ Object.assign(THREE.TGXLoader.prototype, {
 					materialParams[textureId] = staticTexture;
 				}
 
-				if (!override) return false;
+				//console.log('MaterialParams', materialParams, "\n\n");
+				console.log('MaterialParamsAlphaTest', materialParams.useAlphaTest, part);
 
-				if (log) console.log('MaterialParams', materialParams, "\n\n");
+				//if (!override) return false;
 				return new THREE.TGXMaterial(materialParams);
 				//return new THREE.MeshPhongMaterial(materialParams);
 			} else {
@@ -2053,7 +2427,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 				logName = texture.name+(src && src.indexOf('blob') != -1 ? ' '+src : '');
 			}
 
-			console.log(textureId+': '+logName, texture);
+			console.log("\t"+textureId+': '+logName);
 
 			if (src && src.indexOf('blob') != -1) {
 				var canvas = document.createElement('canvas');
@@ -2068,7 +2442,20 @@ Object.assign(THREE.TGXLoader.prototype, {
 		}
 
 		function logImageSrc(src) {
-			console.log('%c  ', 'font-size: 50px; background: url("'+src+'") center no-repeat; background-size: contain; border: 1px solid;');
+			console.log("\t\t"+'%c  ', 'font-size: 50px; background: url("'+src+'") center no-repeat; background-size: contain; border: 1px solid;');
+		}
+
+		function logColors(colors) {
+			var format = [];
+			var args = [];
+			for (var i=0; i<colors.length; i++) {
+				var color = colors[i];
+				if (!color) continue;
+				color = new THREE.Color(color);
+				format.push("%c #"+color.getHexString());
+				args.push("border-left: 14px solid #"+color.getHexString()+';');
+			}
+			console.log.apply(null, [format.join(' ')].concat(args));
 		}
 
 		// Spasm.Skeleton.prototype.onLoadSkeletonSuccess
@@ -2306,7 +2693,6 @@ Object.assign(THREE.TGXLoader.prototype, {
 						hash: dye.hash,
 						investmentHash: dye.investment_hash,
 						slotTypeIndex: dye.slot_type_index,
-						variant: dye.variant,
 
 						diffuse: gearDyeTextures.diffuse ? gearDyeTextures.diffuse.texture : null,
 						normal: gearDyeTextures.normal ? gearDyeTextures.normal.texture : null,
@@ -2344,31 +2730,54 @@ Object.assign(THREE.TGXLoader.prototype, {
 							//gearDye.shininess = spec[1];
 							//gearDye.reflectivity = spec[1];
 							//gearDye.shininess = dye.material_properties.subsurface_scattering_strength[0];
+
+							logColors([gearDye.primaryColor, gearDye.secondaryColor]);
 							break;
 						case 'destiny2':
-							gearDye.primaryColor = new THREE.Color().fromArray(dyeMat.primary_albedo_tint);//.primary_material_params;
-							gearDye.secondaryColor = new THREE.Color().fromArray(dyeMat.secondary_albedo_tint);//.secondary_material_params;
+							gearDye.primaryColor = new THREE.Color().fromArray(dyeMat.primary_albedo_tint);
+							// primary_material_params
+							gearDye.secondaryColor = new THREE.Color().fromArray(dyeMat.secondary_albedo_tint);
+							// secondary_material_params
 							gearDye.wornColor = new THREE.Color().fromArray(dyeMat.worn_albedo_tint);
+							// worn_material_parameters
 
-							var spec = dye.material_properties.specular_properties;
+							var spec = dyeMat.specular_properties;
+							console.log('MatSpecularParams', dyeMat.specular_properties);
 							//gearDye.specular = new THREE.Color(spec[0], spec[0], spec[0]);
 							//gearDye.shininess = spec[1];
 							//gearDye.specular = new THREE.Color(0xffffff);
 							//gearDye.shininess = 32;
 
-							var emissive = dye.material_properties.emissive_tint_color_and_intensity_bias;
-							//gearDye.emissive = new THREE.Color(emissive[1], emissive[2], emissive[3]);
-							//gearDye.emissiveIntensity = emissive[0];
-							//gearDye.emissive = new THREE.Color().fromArray(new THREE.Vector3().fromArray(dye.material_properties.emissive_tint_color_and_intensity_bias));
-							//gearDye.shininess = dye.material_properties.subsurface_scattering_strength_and_emissive[0];
-
-							gearDye.detailDiffuseTransform = dye.material_properties.detail_diffuse_transform;
-							gearDye.detailNormalTransform = dye.material_properties.detail_normal_transform;
+							gearDye.detailDiffuseTransform = dyeMat.detail_diffuse_transform;
+							gearDye.detailNormalTransform = dyeMat.detail_normal_transform;
 
 							// Physically Based Rendering
 							// emissive_pbr_params
+							// emissive_tint_color_and_intensity_bias
 							// lobe_pbr_params
 							// tint_pbr_params
+
+							//gearDye.metalness = 1;//dyeMat.tint_pbr_params[0];
+
+							//if (i == 0) gearDye.metalness = 0;
+
+							// spec_aa_xform
+
+							gearDye.primaryParams = dyeMat.primary_material_params;
+							//gearDye.primaryParamsAdvanced = dyeMat.primary_material_advanced_params;
+							gearDye.secondaryParams = dyeMat.secondary_material_params;
+							gearDye.wornParams = dyeMat.worn_material_parameters;
+
+							//if (dyeMat.primary_material_advanced_params[0] == -1) {
+							//	gearDye.useDye = false;
+							//}
+
+
+							console.warn('PrimaryMatParams', dyeMat.primary_material_params, dyeMat.primary_material_advanced_params);
+							console.warn('SecondaryMatParams', dyeMat.secondary_material_params);
+							console.warn('WornMatParams', dyeMat.worn_material_parameters);
+
+							logColors([gearDye.primaryColor, gearDye.secondaryColor, gearDye.wornColor]);
 							break;
 					}
 
@@ -2406,9 +2815,10 @@ Object.assign(THREE.TGXLoader.prototype, {
 				}
 				for (var j=0; j<dyes.length; j++) {
 					var dye = dyes[j];
+					//console.log('DyeSlotIndex', j, dye.slotTypeIndex, dye);
 					//if (dyeType == 'lockedDyes' && ignoreLockedDyes && resolvedDyes[dye.slotTypeIndex]) continue;
-					//resolvedDyes[dye.slotTypeIndex] = dye;
-					resolvedDyes[j] = dye;
+					resolvedDyes[dye.slotTypeIndex] = dye;
+					//resolvedDyes[j] = dye;
 				}
 			}
 
@@ -2458,6 +2868,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 				var partOffsets = [];
 
 				var partLimit = renderMesh.stage_part_offsets[4];//renderMesh.stage_part_list.length;
+				//var partLimit = renderMesh.stage_part_offsets[8];//renderMesh.stage_part_list.length;
 				for (var i=0; i<partLimit; i++) {
 					partOffsets.push(i);
 				}
@@ -2465,6 +2876,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 				for (var i=0; i<partOffsets.length; i++) {
 					var partOffset = partOffsets[i];
 					var stagePart = renderMesh.stage_part_list[partOffset];
+
+					//if (stagesToRender.indexOf(partOffset) == -1) continue;
+
 					//console.log('StagePart['+renderMeshIndex+':'+partOffset+']',
 					//	"\n\tLOD:", stagePart.lod_category,
 					//	"\n\tShader:", stagePart.shader,
@@ -2501,6 +2915,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 
 		// Spasm.RenderMesh.prototype.getAttributes
 		function parseVertexBuffers(tgxBin, renderMesh) {
+			if (renderMesh.stage_part_vertex_stream_layout_definitions.length > 1) {
+				console.warn('Multiple Stage Part Vertex Layout Definitions', renderMesh.stage_part_vertex_stream_layout_definitions);
+			}
 			var stagePartVertexStreamLayoutDefinition = renderMesh.stage_part_vertex_stream_layout_definitions[0];
 			var formats = stagePartVertexStreamLayoutDefinition.formats;
 
@@ -2735,18 +3152,14 @@ Object.assign(THREE.TGXLoader.prototype, {
 
 // Custom ShaderMaterial that implements Destiny gear dyes
 (function() {
+	var ShaderMaterial = THREE.ShaderMaterial;
 	function TGXMaterial(params) {
-		if (!params) params = {};
+		if (params == undefined) params = {};
 
-		var shaderLib = THREE.ShaderLib.phong;//standard;
-		var uniforms = THREE.UniformsUtils.clone(shaderLib.uniforms);
-		var vertexShader = shaderLib.vertexShader;
-		var fragmentShader = shaderLib.fragmentShader;
-
-		THREE.ShaderMaterial.call(this, {
-			uniforms: uniforms,
-			vertexShader: vertexShader,
-			fragmentShader: fragmentShader,
+		ShaderMaterial.call(this, {
+			//uniforms: uniforms,
+			//vertexShader: vertexShader,
+			//fragmentShader: fragmentShader,
 			lights: true,
 			fog: true
 		});
@@ -2761,23 +3174,26 @@ Object.assign(THREE.TGXLoader.prototype, {
 		this.envMap = null;
 		this.alphaMap = null;
 		this.emissiveMap = null;
+		this.specularMap = null;
 		this.gearstackMap = null;
 
 		this.color = new THREE.Color(0xffffff);
 		this.emissive = new THREE.Color(0x000000);
 		this.emissiveIntensity = 1;
 		this.specular = new THREE.Color(0x111111);
-		this.shininess = 30;
-		this.reflectivity = 1;
+		this.shininess = 0;
+		this.reflectivity = 0.1;
 
-		//this.metalness = 0.5;
-		//this.roughness = 0.5;
+		this.metalness = 0.5;
+		this.roughness = 0.5;
 
 		this.detailMap = null;
 		this.detailNormalMap = null;
 		this.detailDecalMap = null;
 		this.primaryDetailMap = null;
 		this.secondaryDetailMap = null;
+
+		this.decalMap = null;
 
 		this.dyeVariant = 0;
 		this.dyeBlendMode = 0;
@@ -2801,25 +3217,30 @@ Object.assign(THREE.TGXLoader.prototype, {
 		this.detailNormalTransform = new THREE.Vector4(1, 1, 0, 0);
 		this.wornColor = new THREE.Color(0x666666);
 
+		this.primaryParams = new THREE.Vector4(0, 0, 0, 0);
+		this.secondaryParams = new THREE.Vector4(0, 0, 0, 0);
+		this.wornParams = new THREE.Vector4(0, 0, 0, 0);
+
 		// Flags
 		this.useAlphaTest = false; // 0x20
 		//this.transparent = true;
 
 		this.useDye = true;
 		this.useDetail = true;
+		this.useDecal = false;
 
 		//this.detailEnvMap = null; // Vex Mythoclast
-
+		//console.log('TGXMaterialAlphaTest', params);
 
 		this.setValues(params);
 		this.extensions.derivatives = true;
 
 		this.update();
 	}
-	TGXMaterial.prototype = Object.create(THREE.ShaderMaterial.prototype);
+	TGXMaterial.prototype = Object.create(ShaderMaterial.prototype);
 	TGXMaterial.prototype.constructor = TGXMaterial;
 	TGXMaterial.prototype.copy = function(source) {
-		THREE.ShaderMaterial.prototype.copy.call(this, source);
+		ShaderMaterial.prototype.copy.call(this, source);
 		//THREE.MeshPhongMaterial.prototype.copy.call(this, source);
 
 		this.map = source.map;
@@ -2836,6 +3257,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 		this.shininess = source.shininess;
 		this.reflectivity = source.reflectivity;
 
+		this.metalness = source.metalness;
+		this.roughness = source.roughness;
+
 		this.transparency = source.transparency;
 		//
 		this.skinning = source.skinning;
@@ -2850,6 +3274,8 @@ Object.assign(THREE.TGXLoader.prototype, {
 		this.detailDecalMap = source.detailDecalMap;
 		this.primaryDetailMap = source.primaryDetailMap;
 		this.secondaryDetaileMap = source.secondaryDetaileMap;
+
+		this.decalMap = source.decalMap;
 
 		this.dyeVariant = source.dyeVariant;
 		this.dyeBlendMode = source.dyeBlendMode;
@@ -2873,18 +3299,25 @@ Object.assign(THREE.TGXLoader.prototype, {
 		this.detailNormalTransform = source.detailNormalTransform;
 		this.wornColor = source.wornColor;
 
+		this.primaryParams = source.primaryParams;
+		this.secondaryParams = source.secondaryParams;
+		this.wornParams = source.wornParams;
+
 		// Flags
 		this.useDye = source.useDye;
 		this.useDetail = source.useDetail;
+		this.useDecal = source.useDecal;
 		this.useAlphaTest = source.useAlphaTest;
 
 		this.update();
 		return this;
 	};
 	TGXMaterial.prototype.update = function() {
-		var uniforms = this.uniforms;
-		var vertexShader = this.vertexShader;
-		var fragmentShader = this.fragmentShader;
+		var shaderLib = THREE.ShaderLib.phong;
+		if (this.game == 'destiny2') shaderLib = THREE.ShaderLib.standard;
+		var uniforms = THREE.UniformsUtils.clone(shaderLib.uniforms);
+		var vertexShader = shaderLib.vertexShader;
+		var fragmentShader = shaderLib.fragmentShader;
 		var defines = {};
 
 		//console.log('MaterialUpdate', this);
@@ -2912,6 +3345,10 @@ Object.assign(THREE.TGXLoader.prototype, {
 			defines['USE_EMISSIVEMAP'] = '';
 			uniforms.emissiveMap = {value: this.emissiveMap};
 		}
+		if (this.specularMap) {
+			defines['USE_SPECULARMAP'] = '';
+			uniforms.specularMap = {value: this.specularMap};
+		}
 		if (this.color) {
 			uniforms.diffuse = {value: this.color};
 		}
@@ -2925,11 +3362,11 @@ Object.assign(THREE.TGXLoader.prototype, {
 		uniforms.shininess = {value: this.shininess};
 		uniforms.reflectivity = {value: this.reflectivity};
 
-		//uniforms.metalness = {value: this.metalness};
-		//uniforms.roughness = {value: this.roughness};
+		uniforms.metalness = {value: this.metalness};
+		uniforms.roughness = {value: this.roughness};
 
 		if (this.vertexColors) {
-			defines['USE_COLOR'] = '';
+			//defines['USE_COLOR'] = '';
 		}
 
 		// Destiny Specific Stuff
@@ -2942,14 +3379,19 @@ Object.assign(THREE.TGXLoader.prototype, {
 			uniforms.gearstackMap = {value: this.gearstackMap};
 			switch(this.game) {
 				case 'destiny2':
-					//defines['USE_AOMAP'] = '';
-					//uniforms.aoMap = {value: this.gearstackMap};
+					defines['USE_AOMAP'] = '';
+					uniforms.aoMap = {value: this.gearstackMap};
 					//
 					//defines['USE_ROUGHNESSMAP'] = '';
 					//uniforms.roughnessMap = {value: this.gearstackMap};
 
 					//defines['USE_SPECULARMAP'] = '';
-					//uniforms.specularMap = uniforms.gearstackMap;
+					//uniforms.specularMap = {value: this.gearstackMap};
+					uniforms.primaryParams = {value: this.primaryParams};
+					uniforms.secondaryParams = {value: this.secondaryParams};
+
+					//uniforms.shininess = {value: this.usePrimaryColor ? this.primaryParams[2] : this.secondaryParams[2]};
+					//uniforms.reflectivity = {value: this.usePrimaryColor ? this.primaryParams[1] : this.secondaryParams[1]};
 					break;
 				default:
 					//uniforms.blendMode = {value: this.blendMode};
@@ -2996,158 +3438,61 @@ Object.assign(THREE.TGXLoader.prototype, {
 		}
 
 		if (this.useDetail) {
-			if (this.detailMap) {
-				defines['USE_DETAIL'] = '';
-				uniforms.detailMap = {value: this.detailMap};
-			} else {
-				//defines['USE_DETAIL'] = '';
-				uniforms.detailMap = {value: this.usePrimaryColor ? this.primaryDetailMap : this.secondaryDetailMap};
-			}
-			if (this.detailNormalMap) {
-				defines['USE_DETAIL_NORMAL'] = '';
-				uniforms.detailNormalMap = {value: this.detailNormalMap};
-			}
-			if (this.detailDecalMap) {
-				defines['USE_DECAL'] = '';
-				uniforms.detailDecalMap = {value: this.detailDecalMap};
-			}
+			//if (this.detailMap) {
+			//	defines['USE_DETAIL'] = '';
+			//	uniforms.detailMap = {value: this.detailMap};
+			//} else {
+			//	//defines['USE_DETAIL'] = '';
+			//	uniforms.detailMap = {value: this.usePrimaryColor ? this.primaryDetailMap : this.secondaryDetailMap};
+			//}
+			//if (this.detailNormalMap) {
+			//	defines['USE_DETAIL_NORMAL'] = '';
+			//	uniforms.detailNormalMap = {value: this.detailNormalMap};
+			//}
+			//if (this.detailDecalMap) {
+			//	defines['USE_DECAL'] = '';
+			//	uniforms.detailDecalMap = {value: this.detailDecalMap};
+			//}
+		}
+
+		if (this.useDecal) {
+			defines['USE_DECAL'] = '';
 		}
 
 		if (this.shininess == 0) {
 			defines['NO_SHINE'] = '';
 		}
 
+		if (this.useDye) {
+			defines['USE_DYE'] = '';
+		}
+
 		//console.log('MaterialParams', this);
 
 		// Spasm.GearShader
 		// Since most of the rendering is handled by Three.js, only some of this shader code is needed
+		var chunks = TGXMaterial.ShaderChunk;
+
 		if (vertexShader.indexOf('USE_DETAIL') == -1) {
 			// Detail Vertex Vars
-			var uv2ParsVertex = [
-				"#ifdef USE_DETAIL",
-					"attribute vec2 uv2;",
-					"varying vec2 vUv2;",
-					"uniform vec4 detailDiffuseTransform;",
-					"uniform vec4 detailNormalTransform;",
-				"#endif",
-			];
-
-			vertexShader = this.insertAfter('#include <uv2_pars_vertex>', vertexShader, uv2ParsVertex);
-
-			var uv2Vertex = [
-				"#ifdef USE_DETAIL",
-					"vUv2 = (uv2 * detailDiffuseTransform.xy) + detailDiffuseTransform.zw;",
-					// vertexShader.push("v_texcoord2 = ((texcoord * a_texcoord2) * u_detail_transform.xy) + u_detail_transform.zw;"),
-				"#endif"
-			];
-			vertexShader = this.insertAfter('#include <uv2_vertex>', vertexShader, uv2Vertex);
+			vertexShader = this.insertAfter('#include <uv2_pars_vertex>', vertexShader, chunks.detail_pars_vertex);
+			vertexShader = this.insertAfter('#include <uv2_vertex>', vertexShader, chunks.detail_vertex);
 		}
 
 		if (fragmentShader.indexOf('USE_GEARSTACKMAP') == -1) {
-			var gearstackParsFragment = [
-				//"#define saturate(value) clamp(value, 0.0, 1.0)",
-				"const float gamma_correction_power = 2.2;",
-				"const float gamma_correction_power_inverse = 1.0/2.2;",
-
-				// Blend Functions
-				"vec4 blend_overlay(vec4 back, vec4 front) {",
-					"return front * saturate(back * 4.0) + saturate(back - 0.25);",
-				"}",
-				"vec4 blend_multiply(vec4 back, vec4 front) {",
-					"return back * front;",
-				"}",
-				"vec4 blend_screen(vec4 back, vec4 front) {",
-					"vec4 back_screen = vec4(1.0 - back.x, 1.0 - back.y, 1.0 - back.z, 1.0);",
-					"vec4 front_screen = vec4(1.0 - front.x, 1.0 - front.y, 1.0 - front.z, 1.0);",
-					"vec4 screen = back_screen * front_screen;",
-					"return vec4(1.0 - screen.x, 1.0 - screen.y, 1.0 - screen.z, 1.0);",
-				"}",
-				"vec4 blend_hard_light(vec4 back, vec4 front) {",
-					"return vec4(",
-						"front.x < 0.5 ? (2.0 * back.x * front.x) : (1.0 - 2.0 * (1.0 - back.x) * (1.0 - front.x)),",
-						"front.y < 0.5 ? (2.0 * back.y * front.y) : (1.0 - 2.0 * (1.0 - back.y) * (1.0 - front.y)),",
-						"front.z < 0.5 ? (2.0 * back.z * front.z) : (1.0 - 2.0 * (1.0 - back.z) * (1.0 - front.z)),",
-						"1.0",
-					");",
-				"}",
-
-				// Gearstack Fragment Vars
-				"#ifdef USE_GEARSTACKMAP",
-					"uniform sampler2D gearstackMap;",
-				"#endif",
-
-				"#ifdef USE_DESTINY",
-					"uniform float blendMode;",
-					"uniform bool usePrimaryColor;",
-					"uniform vec3 primaryColor;",
-					"uniform vec3 secondaryColor;",
-				"#endif",
-
-				"#ifdef USE_DESTINY2",
-					"uniform bool usePrimaryColor;",
-					"uniform vec3 primaryColor;",
-					"uniform vec3 secondaryColor;",
-					"uniform vec3 wornColor;",
-				"#endif",
-
-				// Texture Detail Fragment Vars
-				"#ifdef USE_DETAIL",
-					"uniform sampler2D detailMap;",
-					"uniform sampler2D detailNormalMap;",
-					"varying vec2 vUv2;",
-				"#endif",
-
-				"#ifdef USE_DECAL",
-					"uniform sampler2D detailDecalMap;",
-				"#endif",
-			];
-			fragmentShader = this.insertAfter('#include <map_pars_fragment>', fragmentShader, gearstackParsFragment);
+			fragmentShader = this.insertAfter('#include <map_pars_fragment>', fragmentShader, [chunks.common_pars_fragment, chunks.gearstack_pars_fragment]);
 
 			// TODO Fix normal detail
-			var gearstackNormalFragment = [
-				"#ifndef USE_DETAIL_NORMAL",
-					"#include <normalmap_pars_fragment>",
-				"#endif",
-				"#ifdef USE_DETAIL_NORMAL",
-					"#ifdef USE_NORMALMAP",
-						//"\n\tuniform sampler2D normalMap;",
-						"\n\tuniform vec2 normalScale;",
-						"uniform vec4 detailNormalTransform;",
-						"\n\tvec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {",
-							"\n\t\tvec3 q0 = dFdx( eye_pos.xyz );",
-							"\n\t\tvec3 q1 = dFdy( eye_pos.xyz );",
-							"\n\t\tvec2 st0 = dFdx( vUv.st );",
-							"\n\t\tvec2 st1 = dFdy( vUv.st );",
-							"\n\t\tvec3 S = normalize( q0 * st1.t - q1 * st0.t );",
-							"\n\t\tvec3 T = normalize( -q0 * st1.s + q1 * st0.s );",
-							"\n\t\tvec3 N = normalize( surf_norm );",
-							//"\n\t\tvec3 mapN = texture2D( normalMap, vUv ).xyz * 2.0 - 1.0;",
-							"\n\t\tvec3 mapN = texture2D( detailNormalMap, vUv2 ).xyz * 2.0 - 1.0;",
-							//"\n\t\tmapN.xy = normalScale * mapN.xy;",
-							"mapN.xy = detailNormalTransform.xy * mapN.xy + detailNormalTransform.zw;",
-							"\n\t\tmat3 tsn = mat3( S, T, N );",
-							"\n\t\treturn normalize( tsn * mapN );",
-						"\n\t}",
-					"\n#endif\n",
-				"#endif",
-				//"#ifdef USE_DETAIL_NORMAL",
-				//	"normalMap = detailNormalMap;",
-				//	//"vec4 color_dye_normal = texture2D(detailNormalMap, vUv2);",
-				//	//"color_dye_normal = color_dye_normal * 2.0 - 1.0;",
-				//	//"vNormal = vNormal + color_dye_normal.xy;",
-				//"#endif"
-			];
-			//fragmentShader = this.replace('#include <normalmap_pars_fragment>', fragmentShader, gearstackNormalFragment);
+			//fragmentShader = this.replace('#include <normalmap_pars_fragment>', fragmentShader, chunks.gearstack_normal_fragment);
 
 			var gearstackFragment = [
 				"diffuseColor = pow(diffuseColor, vec4(gamma_correction_power));",
 
 				"vec4 gearstackColor = vec4(1.0, 1.0, 1.0, 1.0);",
-				"vec4 dyeColor = vec4(1.0, 1.0, 1.0, 1.0);",
+				"vec4 dyeColor = usePrimaryColor ? vec4(primaryColor, 1.0) : vec4(secondaryColor, 1.0);",
 
 				"#ifdef USE_GEARSTACKMAP",
 					"gearstackColor = texture2D(gearstackMap, vUv);",
-					"dyeColor = usePrimaryColor ? vec4(primaryColor, 1.0) : vec4(secondaryColor, 1.0);",
 				"#endif",
 
 				// Dye Textures (Detail)
@@ -3162,11 +3507,11 @@ Object.assign(THREE.TGXLoader.prototype, {
 						+"color_dye_diffuse_texture.y * dye_alpha + dye_color_normalize, "
 						+"color_dye_diffuse_texture.z * dye_alpha + dye_color_normalize, 1.0), "
 						+"vec4(gamma_correction_power));",
-					//"diffuseColor = blend_overlay(color_dye_diffuse, diffuseColor);",
+					"diffuseColor = blend_overlay(color_dye_diffuse, diffuseColor);",
 
 					// TODO figure out how to make decals look worn
 					"#ifdef USE_DECAL",
-						"vec4 decalColor = texture2D(detailDecalMap, vUv2);",
+						//"vec4 decalColor = texture2D(detailDecalMap, vUv2);",
 						//"diffuseColor = blend_multiply(decalColor, diffuseColor);",
 					"#endif",
 
@@ -3195,11 +3540,38 @@ Object.assign(THREE.TGXLoader.prototype, {
 					// Red is AO, Green is smoothness, Blue is encoded alpha test and emissive.
 					// Alpha is encoded dye mask, non-dyed metalness, and wear mask.
 
-					"vec4 blendColorUncorrected = mix(diffuseColor, blend_overlay(diffuseColor, dyeColor), gearstackColor.r);",
+					// Nice overview of PBR
+					// http://blog.teamtreehouse.com/beginners-guide-physically-based-rendering-unity
+					"vec4 wearColor = vec4(wornColor, 1.0);",
+
+					"float gearstackB = gearstackColor.b * 255.0;",
+					"float gearstackA = gearstackColor.a * 255.0;",
+
+					"float gearstackAO = gearstackColor.r;",
+					"float gearstackSmoothness = gearstackColor.g;",
+					"float gearstackAlphaTest = gearstackB / 32.0;",
+					"float gearstackEmissive = saturate((gearstackColor.b - (40.0/255.0)) * (255.0 / (255.0-40.0)));",
+					//"float gearstackMetalness = saturate(gearstackColor.a - ((255.0-32.0)/255.0) * (32.0/255.0));",
+					//"float gearstackMetalness = max(gearstackA, 32.0) / 32.0;",
+					"float gearstackMetalness = gearstackA / 32.0;",
+					"float gearstackDyeMask = step(40.0 / 255.0, gearstackA);",
+					"float gearstackWearMask = saturate((gearstackColor.a - (48.0/255.0)) * (255.0 / (255.0-48.0)));",
+
+					"vec4 blendColorUncorrected = diffuseColor;",
+					"#ifdef USE_DYE",
+						"blendColorUncorrected = mix(diffuseColor, blend_overlay(diffuseColor, dyeColor), gearstackDyeMask);",
+					"#endif",
+					"vec4 blendWearColorUncorrected = mix(blendColorUncorrected, blend_multiply(blendColorUncorrected, wearColor), gearstackWearMask);",
+					//"vec4 blendWearColorUncorrected = mix(blendColorUncorrected, blend_overlay(blendColorUncorrected, wearColor), gearstackWearMask);",
 					"diffuseColor = blendColorUncorrected;",
+					"diffuseColor = blendWearColorUncorrected;",
 				"#endif",
 
 				"diffuseColor = vec4(pow(diffuseColor.xyz, vec3(gamma_correction_power_inverse)), 1.0);",
+
+				"#ifdef USE_DECAL",
+					//"diffuseColor = texture2D(decalMap, vUv);",
+				"#endif",
 
 				"#ifdef USE_ALPHATESTSTACK",
 					"#ifdef USE_DESTINY",
@@ -3207,15 +3579,100 @@ Object.assign(THREE.TGXLoader.prototype, {
 						"diffuseColor.a = diffuseColor.g;",
 						"if (diffuseColor.a < 1.0 - gearstackColor.b) discard;",
 					"#endif",
+
+					"#ifdef USE_DESTINY2",
+						//"float gearstackB = gearstackColor.b * 255.0;",
+						"if (gearstackB < 32.0) {",
+							"vec4 alphaTestMask = blend_overlay(diffuseColor, vec4(1.0, 0.5, 0.0, 1.0));",
+							//"vec4 alphaTestMask = vec4(diffuseColor.r, diffuseColor.g, diffuseColor.b, 0.0);",
+							//"diffuseColor = mix(diffuseColor, alphaTestMask, gearstackDyeMask*(1.0-(gearstackB / 32.0)));",
+
+							"diffuseColor.a = mix(1.0, gearstackB / 32.0, gearstackDyeMask);",
+
+							//"diffuseColor = mix(diffuseColor, vec4(diffuseColor.r, diffuseColor.g, diffuseColor.b, 0.0), gearstackColor.b);",
+							//"diffuseColor.a = gearstackB / 32.0;",
+
+
+
+							//"diffuseColor.a *= mix(1.0, gearstackB / 32.0, gearstackDyeMask);",
+							//"diffuseColor.a = mix(0.0, 1.0, gearstackDyeMask*(gearstackB / 32.0));",
+
+						"}",
+						//"if (gearstackB < 32.0) {",
+							//"diffuseColor = mix(diffuseColor, vec4(diffuseColor.r, diffuseColor.g, diffuseColor.b, 0.0), 1.0-(gearstackB/32.0));",
+							//"diffuseColor.a = gearstackB / 32.0;",
+						//"}",
+						//"float gearstackAlpha = 32.0 / 255.0;",
+						//"if (gearstackB < 32) {",
+						//"diffuseColor.a = saturate((gearstackColor.b - (32.0/255.0)) * (255.0/(255.0/32.0)));",
+						//"if (gearstackColor.b < gearstackAlpha) {",
+						//	"diffuseColor.a = gearstackColor.b * 255.0;",
+							"if (diffuseColor.a < 0.5) {",
+								"discard;",
+							"}",
+						//"}",
+					"#endif",
 				"#endif",
 			];
 			fragmentShader = this.insertAfter('#include <map_fragment>', fragmentShader, gearstackFragment);
+
+			var emissiveFragment = [
+				"#ifdef USE_DESTINY2",
+					//"float gearstackEmissive = gearstackColor.b * 255.0;",
+					"if (gearstackB > 40.0) {",
+						//"float emissiveValue = saturate((gearstackColor.b - (40.0/255.0)) * (255.0 / (255.0-40.0)));",
+
+						"totalEmissiveRadiance *= gearstackEmissive;",
+						//"diffuseColor = mix(diffuseColor, vec4(0.0, 1.0, 1.0, 1.0), gearstackDyeMask);",
+					"}",
+				"#endif"
+			];
+			fragmentShader = this.insertAfter('#include <emissivemap_fragment>', fragmentShader, emissiveFragment);
+
+			var roughnessFragment = [
+				"#ifdef USE_DESTINY2\n",
+				"\troughnessFactor = 1.0-gearstackColor.g;\n",
+				"#endif\n"
+			];
+			fragmentShader = this.insertAfter('#include <roughnessmap_fragment>', fragmentShader, roughnessFragment);
+
+			var metalnessFragment = [
+				"#ifdef USE_DESTINY2",
+					//"metalnessFactor = 0.0;",
+					//"metalnessFactor = float(int(gearstackColor.a * 255.0) & 0x3F) / 32.0;",
+					//"int gearstackAlpha = int(gearstackColor.a * 255.0);",
+					//"metalnessFactor = float(bitwise_and(gearstackAlpha, 0x3F)) / 32.0;",
+					//"float gearstackA = gearstackColor.a * 255.0;",
+					//"diffuseColor = mix(diffuseColor, vec4(1.0, 0.0, 0.0, 1.0), gearstackColor.a);",
+					//"if (gearstackA < 32.0) {",
+						//"diffuseColor = mix(diffuseColor, vec4(0.0, gearstackMetalness, 0.0, 1.0), gearstackDyeMask);",
+						//"diffuseColor = mix(diffuseColor, blend_overlay(diffuseColor, vec4(0.0, gearstackMetalness, 0.0, 0.2)), gearstackDyeMask);",
+
+				//"diffuseColor = mix(diffuseColor, vec4(0.0, 1.0, 0.0, 1.0), gearstackDyeMask);",
+
+				"if (gearstackA < 32.0) {",
+					"metalnessFactor = gearstackA / 32.0;",
+				"} else {",
+					"metalnessFactor = usePrimaryColor ? primaryParams.w : secondaryParams.w;",
+				"}",
+
+				//"metalnessFactor = mix(0.0, gearstackMetalness, gearstackDyeMask);",
+						//"metalnessFactor = saturate(gearstackA / 32.0);",
+					//"}",
+					//"} else {",
+						//"metalnessFactor = 0.0;",
+					//"}",
+					//"metalnessFactor = gearstackColor.a * metalness;",
+				"#endif"
+			];
+			fragmentShader = this.insertAfter('#include <metalnessmap_fragment>', fragmentShader, metalnessFragment);
 
 			var alphaFragment = [
 				"#ifdef USE_ALPHATESTSTACK",
 					"#ifdef USE_DESTINY",
 						//"diffuseColor.a = gearstackColor.b;",
 						//"diffuseColor.a = 0.5;",
+
 					"#endif",
 				"#endif"
 			];
@@ -3262,6 +3719,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 			//console.log('FragmentShader', fragmentShader);
 		}
 		this.defines = defines;
+		this.uniforms = uniforms;
 		this.vertexShader = vertexShader;
 		this.fragmentShader = fragmentShader;
 	};
@@ -3284,6 +3742,152 @@ Object.assign(THREE.TGXLoader.prototype, {
 		return shader;
 	};
 	THREE.TGXMaterial = TGXMaterial;
+
+	TGXMaterial.ShaderChunk = {
+		common_pars_fragment: [
+			//"#define saturate(value) clamp(value, 0.0, 1.0)",
+			"const float gamma_correction_power = 2.2;",
+			"const float gamma_correction_power_inverse = 1.0/2.2;",
+
+			// Blend Functions
+			"vec4 blend_overlay(vec4 back, vec4 front) {",
+				"\treturn front * saturate(back * 4.0) + saturate(back - 0.25);",
+			"}",
+			"vec4 blend_multiply(vec4 back, vec4 front) {",
+				"\treturn back * front;",
+			"}",
+			"vec4 blend_screen(vec4 back, vec4 front) {",
+				"\tvec4 back_screen = vec4(1.0 - back.x, 1.0 - back.y, 1.0 - back.z, 1.0);",
+				"\tvec4 front_screen = vec4(1.0 - front.x, 1.0 - front.y, 1.0 - front.z, 1.0);",
+				"\tvec4 screen = back_screen * front_screen;",
+				"\treturn vec4(1.0 - screen.x, 1.0 - screen.y, 1.0 - screen.z, 1.0);",
+			"}",
+			"vec4 blend_hard_light(vec4 back, vec4 front) {",
+				"\treturn vec4(",
+					"\t\tfront.x < 0.5 ? (2.0 * back.x * front.x) : (1.0 - 2.0 * (1.0 - back.x) * (1.0 - front.x)),",
+					"\t\tfront.y < 0.5 ? (2.0 * back.y * front.y) : (1.0 - 2.0 * (1.0 - back.y) * (1.0 - front.y)),",
+					"\t\tfront.z < 0.5 ? (2.0 * back.z * front.z) : (1.0 - 2.0 * (1.0 - back.z) * (1.0 - front.z)),",
+					"\t\t1.0",
+				"\t);",
+			"}",
+			"int bitwise_and(int n1, int n2){",
+				"float v1 = float(n1);",
+				"float v2 = float(n2);",
+
+				"int byteVal = 1;",
+				"int result = 0;",
+
+				"for(int i = 0; i < 32; i++){",
+					"bool keepGoing = v1>0.0 || v2 > 0.0;",
+					"if(keepGoing){",
+
+						"bool addOn = mod(v1, 2.0) > 0.0 && mod(v2, 2.0) > 0.0;",
+
+						"if(addOn){",
+							"result += byteVal;",
+						"}",
+
+						"v1 = floor(v1 / 2.0);",
+						"v2 = floor(v2 / 2.0);",
+						"byteVal *= 2;",
+					"} else {",
+						"return result;",
+					"}",
+				"}",
+				"return result;",
+			"}"
+		],
+		detail_pars_vertex: [
+			"#ifdef USE_DETAIL",
+				"\tattribute vec2 uv2;",
+				"\tvarying vec2 vUv2;",
+				"\tuniform vec4 detailDiffuseTransform;",
+				"\tuniform vec4 detailNormalTransform;",
+			"#endif"
+		],
+		detail_vertex: [
+			"#ifdef USE_DETAIL",
+				"\tvUv2 = (uv2 * detailDiffuseTransform.xy) + detailDiffuseTransform.zw;",
+				// vertexShader.push("v_texcoord2 = ((texcoord * a_texcoord2) * u_detail_transform.xy) + u_detail_transform.zw;"),
+			"#endif"
+		],
+		gearstack_pars_fragment: [
+			// Gearstack Fragment Vars
+			"#ifdef USE_GEARSTACKMAP",
+				"\tuniform sampler2D gearstackMap;",
+			"#endif",
+
+			"#ifdef USE_DESTINY",
+				"\tuniform float blendMode;",
+				"\tuniform bool usePrimaryColor;",
+				"\tuniform vec3 primaryColor;",
+				"\tuniform vec3 secondaryColor;",
+			"#endif",
+
+			"#ifdef USE_DESTINY2",
+				"\tuniform bool usePrimaryColor;",
+				"\tuniform vec3 primaryColor;",
+				"\tuniform vec3 secondaryColor;",
+				"\tuniform vec3 wornColor;",
+
+				"\tuniform vec4 primaryParams;",
+				"\tuniform vec4 secondaryParams;",
+				"\tuniform vec4 wornParams;",
+			"#endif",
+
+			// Texture Detail Fragment Vars
+			"#ifdef USE_DETAIL",
+				"\tuniform sampler2D detailMap;",
+				"\tuniform sampler2D detailNormalMap;",
+				"\tvarying vec2 vUv2;",
+			"#endif",
+
+			//"#ifdef USE_DECAL",
+			//	"\tuniform sampler2D decalMap;",
+			//	"#if !defined(USE_MAP) && !defined(USE_NORMALMAP) && !defined(USE_SPECULARMAP) && !defined(USE_ALPHAMAP) && !defined(USE_EMISSIVEMAP) && !defined(USE_ROUGHNESSMAP) && !defined(USE_METALNESSMAP)",
+			//		"\tvarying vec2 vUv;",
+			//	"#endif",
+			//"#endif"
+		],
+		gearstack_normal_fragment: [
+			"#ifndef USE_DETAIL_NORMAL",
+				"#include <normalmap_pars_fragment>",
+			"#endif",
+			"#ifdef USE_DETAIL_NORMAL",
+				"#ifdef USE_NORMALMAP",
+					//"\n\tuniform sampler2D normalMap;",
+					"\n\tuniform vec2 normalScale;",
+					"uniform vec4 detailNormalTransform;",
+					"\n\tvec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm ) {",
+						"\n\t\tvec3 q0 = dFdx( eye_pos.xyz );",
+						"\n\t\tvec3 q1 = dFdy( eye_pos.xyz );",
+						"\n\t\tvec2 st0 = dFdx( vUv.st );",
+						"\n\t\tvec2 st1 = dFdy( vUv.st );",
+						"\n\t\tvec3 S = normalize( q0 * st1.t - q1 * st0.t );",
+						"\n\t\tvec3 T = normalize( -q0 * st1.s + q1 * st0.s );",
+						"\n\t\tvec3 N = normalize( surf_norm );",
+						//"\n\t\tvec3 mapN = texture2D( normalMap, vUv ).xyz * 2.0 - 1.0;",
+						"\n\t\tvec3 mapN = texture2D( detailNormalMap, vUv2 ).xyz * 2.0 - 1.0;",
+						//"\n\t\tmapN.xy = normalScale * mapN.xy;",
+						"mapN.xy = detailNormalTransform.xy * mapN.xy + detailNormalTransform.zw;",
+						"\n\t\tmat3 tsn = mat3( S, T, N );",
+						"\n\t\treturn normalize( tsn * mapN );",
+					"\n\t}",
+				"\n#endif\n",
+			"#endif",
+			//"#ifdef USE_DETAIL_NORMAL",
+			//	"normalMap = detailNormalMap;",
+			//	//"vec4 color_dye_normal = texture2D(detailNormalMap, vUv2);",
+			//	//"color_dye_normal = color_dye_normal * 2.0 - 1.0;",
+			//	//"vNormal = vNormal + color_dye_normal.xy;",
+			//"#endif"
+		]
+	};
+	for (var chunkId in TGXMaterial.ShaderChunk) {
+		var chunk = TGXMaterial.ShaderChunk[chunkId];
+		if (typeof chunk != 'string') chunk = chunk.join("\n")+"\n";
+		TGXMaterial.ShaderChunk[chunkId] = chunk;
+	}
 })();
 
 // A pure javascript loader for querying the mobile manifest.

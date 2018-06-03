@@ -313,12 +313,15 @@ Object.assign(THREE.TGXLoader.prototype, {
 					var skipSet = false;
 					// regionKeysToNotLoad
 					//switch(parseInt(setIndex)) {
-					//	//case 2: // hud
+					//	case 2: // hud
+					//	//case 4:
+					//	case 3:
 					//	case 6: // ammo
 					//	case 21: // reticle
 					//		skipSet = true;
 					//		break;
 					//	default:
+					//		console.warn('RegionSetIndex', setIndex);
 					//		break;
 					//}
 					if (skipSet) continue;
@@ -421,6 +424,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						var texture = content.textures[textureIndex];
 						loadTexture(texture, false, function(textureData) {
 							contentRegions.textures[textureIndex] = textureData.referenceId;
+
 							assetLoadCount++;
 							checkContentLoaded();
 						});
@@ -655,7 +659,8 @@ Object.assign(THREE.TGXLoader.prototype, {
 			defaultMaterial = new THREE.MeshLambertMaterial({
 				emissive: 0x444444,
 				color: 0x777777,
-				shading: THREE.FlatShading,
+				//shading: THREE.FlatShading,
+				flatShading: true,
 				side: THREE.DoubleSide,
 				skinning: hasBones
 			});
@@ -789,7 +794,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 					case -1: // armor (no region)
 					case 0: // weapon grip
 					case 1: // weapon body
-					//case 2: // ??
+					//case 2: // Khvostov 7G-0X?
 					case 3: // weapon scope
 					case 4: // weapon stock/scope?
 					case 5: // weapon magazine
@@ -803,7 +808,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						break;
 
 					case 21: // hud
-						skipRegion = true;
+						//skipRegion = true;
 						break;
 
 					case 22: // sparrow wings
@@ -815,6 +820,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						break;
 					default:
 						console.warn('UnknownArtRegion['+a+']', artRegionPattern.regionIndex);
+						skipRegion = true;
 						break;
 				}
 				if (skipRegion) continue;
@@ -874,7 +880,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 					var metadata = tgxBin.metadata;
 					var texturePlates = metadata.texture_plates;
 
-					//console.log('Metadata['+g+']', tgxBin);
+					//console.log('Metadata['+geometryHash+']', tgxBin);
 
 					// Spasm.TGXAssetLoader.prototype.getGearRenderableModel
 					//console.log('TexturePlates['+g+']', texturePlates);
@@ -888,6 +894,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						for (var texturePlateId in texturePlateSet) {
 							var texturePlate = texturePlateSet[texturePlateId];
 							var texturePlateRef = texturePlateId+'_'+texturePlate.plate_index;
+							//var texturePlateRef = geometryHash+'_'+texturePlateId+'_'+texturePlate.plate_index;
 
 							var textureId = texturePlateId;
 							switch(texturePlateId) {
@@ -1022,15 +1029,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 						shouldRender = true;
 					//}
 					break;
-				case 8: // HUD / Low poly geometries
-					//if (!(part.flags & 0x10)) { // HUD
-						shouldRender = false;
-					//}
-
-					break;
-
 				case 4: // LOD 1: Low poly geometries
 				case 7: // LOD 2: Low poly geometries
+				case 8: // HUD / Low poly geometries
 				case 9: // LOD 3: Low poly geometries
 					shouldRender = false;
 					break;
@@ -1101,6 +1102,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						//var material = new THREE.MeshPhongMaterial(materialParams);
 						material.name = geometryHash+'-'+(j == 0 ? 'Primary' : 'Secondary')+i;
 						materials.push(material);
+						//console.log('MaterialName:'+material.name);
 					}
 				}
 			}
@@ -1132,6 +1134,18 @@ Object.assign(THREE.TGXLoader.prototype, {
 					var part = parts[p];
 
 					if (!checkRenderPart(part)) continue;
+
+					// Ghost Shell Eye Bg
+					//if (m != 0) continue;
+					//if (p != 3) continue;
+
+					//if (m != 0) continue;
+					//if (p <6) continue;
+
+					// Phoenix Strife Type 0 - Feathers
+					//if (m != 1 && p != 1) continue;
+
+					console.log('RenderMeshPart['+geometryHash+':'+m+':'+p+']', part);
 					partCount++;
 
 					var gearDyeSlot = part.gearDyeSlot;
@@ -1146,12 +1160,19 @@ Object.assign(THREE.TGXLoader.prototype, {
 
 					// Load Material
 					if (loadTextures) {
-						var material = parseMaterial(part, gearDyes[gearDyeSlot], geometryTextures[geometryHash]);
+						var textures = geometryTextures[geometryHash];
+						if (!textures) {
+							//console.warn('NoGeometryTextures['+geometryHash+']', part);
+						} else {
+							//continue;
+						}
+						var material = parseMaterial(part, gearDyes[gearDyeSlot], textures);
 
 						if (material) {
 							material.name = geometryHash+'-CustomShader'+m+'-'+p;
 							materials.push(material);
 							materialIndex = materials.length-1;
+							//console.log('MaterialName['+materialIndex+']:'+material.name);
 						}
 					}
 
@@ -1231,7 +1252,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 						geometry.faceVertexUvs[0].push(faceVertexUvs);
 
 						if (geometry.faceVertexUvs.length < 2) geometry.faceVertexUvs.push([]);
-						geometry.faceVertexUvs[1].push(detailVertexUvs);
+						//geometry.faceVertexUvs[1].push(detailVertexUvs);
 					}
 				}
 
@@ -1302,7 +1323,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 			}
 		}
 
-		function parseMaterial(part, gearDye, textures) {
+		function parseMaterial(part, gearDye, geometryTextures) {
 			var materialParams = {
 				game: game,
 				//side: THREE.DoubleSide,
@@ -1316,10 +1337,192 @@ Object.assign(THREE.TGXLoader.prototype, {
 				usePrimaryColor: part.usePrimaryColor
 			};
 
+			var textureLookup = [];
+
+			// Use these for debugging
+			var color = 0x333333;
+			var emissive = new THREE.Color(Math.random(), Math.random(), Math.random());
+
+			if (part.variantShaderIndex != -1) console.warn('VariantShaderPresent['+part.variantShaderIndex+']', part);
+
+			var textures = {
+				map: null,
+				normalMap: null,
+				gearstackMap: null,
+				envMap: null
+			};
+			for (var textureId in geometryTextures) {
+				textures[textureId] = geometryTextures[textureId];
+			}
+
+			if (part.shader) {
+				var shader = part.shader;
+				var staticTextureIds = shader.staticTextures ? shader.staticTextures : [];
+				var staticTextureCount = staticTextureIds.length;
+
+				copyGearDyeParams(gearDye, materialParams);
+
+				//if (!(part.flags & 0x1)) {
+				//	materialParams.useDye = false;
+				//	console.warn('NoDye', part, gearDye);
+				//}
+				console.warn('SlotTypeIndex', gearDye.slotTypeIndex);
+
+				if (part.flags & 0x8) {
+					//materialParams.useDye = true;
+					materialParams.useAlphaTest = true;
+					console.warn('AlphaTest', part, gearDye);
+				}
+
+				if (part.flags & 0x4) {
+					//materialParams.emissive = emissive;
+				}
+
+				if (part.flags & ~(0x8|0x10|0x5)) {
+					console.warn('UnknownFlags', part.flags);
+				}
+
+				if (part.flags & 0x20) {
+					//materialParams.color = color;
+					//materialParams.emissive = emissive;
+					//materialParams.color = 0xff0000;
+					//textureLookup.push('map');
+					//textures.normalMap = null;
+					//textures.gearstackMap = null;
+
+				}
+
+
+				for (var i=0; i<staticTextureIds.length; i++) {
+					var staticTextureId = staticTextureIds[i];
+					var staticTextureContent = contentLoaded.textures[staticTextureId];
+					if (!staticTextureContent) {
+						console.warn('MissingTexture['+staticTextureId+']');
+						//continue;
+					}
+					var staticTexture = staticTextureContent ? staticTextureContent.texture : null;
+					logTexture('staticTexture'+i+(textureLookup[i] !== undefined ? '['+textureLookup[i]+']' : ''), staticTexture);
+				}
+
+				var skipShader = false;
+
+				switch(shader.type) {
+					case 7:
+						for (var textureId in textures) {
+							materialParams[textureId] = textures[textureId];
+						}
+
+						if (staticTextureIds.length > 0) {
+							console.warn('StaticTexturesFound', staticTextureIds);
+						}
+
+						if (part.flags & 0x10) {
+							//materialParams.color = color;
+							//materialParams.emissive = emissive;
+							//textures.map = null;
+							//textures.normalMap = null;
+							//textures.gearstackMap = null;
+
+							switch(staticTextureIds.length) {
+								case 1:
+									textureLookup.push('cubeMap');
+									break;
+								//case 2:
+								//	materialParams.map = null;
+								//	textures.normalMap = null;
+								//	materialParams.gearstackMap = null;
+								//	textureLookup.push('detailEnvMap');
+								//	textureLookup.push('cubeMap');
+								//	break;
+								case 3:
+									materialParams.map = null;
+									materialParams.normalMap = null;
+									materialParams.gearstackMap = null;
+									textureLookup.push('map');
+									textureLookup.push('map2');
+									textureLookup.push('cubeMap');
+									break;
+							}
+
+							for (var i=0; i<textureLookup.length; i++) {
+								var textureId = textureLookup[i];
+
+								var staticTextureId = staticTextureIds[i];
+								var staticTextureContent = contentLoaded.textures[staticTextureId];
+
+								console.warn(textureId+'Texture', staticTextureContent ? staticTextureContent.referenceId : staticTextureContent);
+
+							}
+
+							//var staticTextureId = staticTextureIds[staticTextureIds.length-1];
+							//var staticTextureContent = contentLoaded.textures[staticTextureId];
+							//
+							//console.warn('CubeMapTexture', staticTextureContent ? staticTextureContent.referenceId : staticTextureContent);
+							//textureLookup.push('cubeMap');
+						}
+						break;
+					//case 8:
+					//	for (var textureId in textures) {
+					//		materialParams[textureId] = textures[textureId];
+					//	}
+					//	break;
+					default:
+						console.warn('UnknownShader', shader, part, gearDye);
+						skipShader = true;
+						break;
+				}
+
+				if (!skipShader) {
+					for (var i=0; i<textureLookup.length; i++) {
+						var textureId = textureLookup[i];
+						var staticTextureId = staticTextureIds[i];
+						var staticTextureContent = contentLoaded.textures[staticTextureId];
+						if (!staticTextureContent) {
+							console.warn('MissingTexture['+staticTextureId+']');
+							//continue;
+						}
+						var staticTexture = staticTextureContent ? staticTextureContent.texture : null;
+						switch(textureId) {
+							case 'alphaMap':
+								materialParams.transparent = true;
+								break;
+							case 'cubeMap':
+								staticTexture = loadCubeTexture(staticTexture);
+								textureId = 'envMap';
+								break;
+						}
+						materialParams[textureId] = staticTexture;
+					}
+
+					//console.log('MaterialParams', materialParams);
+
+					return new THREE.TGXMaterial(materialParams);
+				}
+			} else {
+				console.warn('NoShader', part);
+			}
+
+			return false;
+		}
+
+		function parseMaterialOld(part, gearDye, textures) {
+			var materialParams = {
+				game: game,
+				side: THREE.DoubleSide,
+				//overdraw: true,
+				skinning: hasBones,
+				//color: 0x777777,
+				//emissive: 0x444444,
+				//envMap: dyeMaterial.envMap ? dyeMaterial.envMap : null,
+				//metalness: ,
+				envMap: null,
+				usePrimaryColor: part.usePrimaryColor,
+				useAlphaTest: (part.flags & 0x8) != 0
+			};
+
 			if (part.variantShaderIndex != -1) console.warn('VariantShaderPresent['+part.variantShaderIndex+']', part);
 
 			if (!textures) {
-				console.warn('NoGeometryTextures', part);
 				textures = {
 					map: null,
 					normalMap: null,
@@ -1345,18 +1548,167 @@ Object.assign(THREE.TGXLoader.prototype, {
 				var textureLookup = [];
 
 				//var dyeColor = dyeMaterial.usePrimaryColor ? dyeMaterial.primaryColor : dyeMaterial.secondaryColor;
-				console.log('Shader', shader, utils.bits(part.flags, 16)+' ('+part.flags+')');
+				console.log('Shader', shader, utils.bits(part.flags, 16)+' ('+part.flags+')', 'LOD Category', part.lodCategory);
 
 				if (part.flags & 0x20) {
-					materialParams.transparent = true;
-					materialParams.useAlphaTest = true;
+					//materialParams.transparent = true;
+					//materialParams.useAlphaTest = true;
 					//materialParams.transparent = true;
 					//materialParams.useAlphaTest = true;
 					//materialParams.emissive = emissive;
 					//override = true;
 				}
 
+				//if (shader.type == 8) {
+				//	copyGearDyeParams(gearDye, materialParams);
+				//	//materialParams.color = color;
+				//	//materialParams.emissive = emissive;
+				//	log = true;
+				//	override = true;
+				//
+				//	if (part.flags & 0x10) {
+				//		textureLookup.push('unknownMap');
+				//		textureLookup.push('map');
+				//	}
+				//}
+				//
+				//if (shader.type == 9) {
+				//	//materialParams.envMap = null;
+				//	copyGearDyeParams(gearDye, materialParams);
+				//	materialParams.color = color;
+				//	materialParams.emissive = emissive;
+				//	//log = true;
+				//	//override = true;
+				//}
+
+				// TODO I have no idea what these flags are for...
+				//if (!(part.flags & 0x1)) {
+				//	materialParams.color = color;
+				//	materialParams.emissive = 0x00ff00;
+				//	override = true;
+				//}
+				//if (!(part.flags & 0x4)) {
+				//	materialParams.color = color;
+				//	materialParams.emissive = 0xff00ff;
+				//	override = true;
+				//}
+				//if (!(part.flags & 0x5)) {
+				//	materialParams.color = color;
+				//	materialParams.emissive = 0xffff00;
+				//	override = true;
+				//}
+				copyGearDyeParams(gearDye, materialParams);
+				for (var textureId in textures) {
+					//materialParams[textureId] = textures[textureId];
+				}
+				if (part.flags & 0x8) {
+					// It Stared Back
+					//copyGearDyeParams(gearDye, materialParams);
+					//materialParams.color = color;
+					//materialParams.emissive = 0x00ffff;
+					//override = true;
+					//log = true;
+					//textureLookup.push('cubeMap2');
+					//materialParams.transparent = true;
+					materialParams.useAlphaTest = true;
+				}
+				if (part.flags & 0x10) {
+					//materialParams.map = textures.map;
+					//materialParams.normalMap = textures.normalMap;
+					//materialParams.gearstackMap = textures.gearstackMap;
+					//materialParams.color = materialParams.usePrimaryColor ? materialParams.primaryColor : materialParams.secondaryColor;
+					//materialParams.emissive = 0x0000ff;
+					//materialParams.transparent = true;
+					//materialParams.useAlphaTest = true;
+					if (staticTextureCount > 0) {
+						//materialParams.emissive = 0xff00ff;
+					}
+					//override = true;
+					//log = true;
+				}
+				if (part.flags & 0x20) { // Decal
+					//materialParams.color = color;
+					//materialParams.emissive = 0x00ff00;
+					//override = true;
+					//log = true;
+				}
+				if (part.flags & 0x40) {
+					//materialParams.color = color;
+					//materialParams.emissive = 0xff0000;
+					//override = true;
+					//log = true;
+				}
+
+				//for (var textureId in textures) {
+				//	var texture = textures[textureId];
+				//	if (!texture) continue;
+				//	console.log("\t"+textureId+':', texture.name);
+				//}
+
+				//if (part.lodCategory.value == 2) {
+				//	materialParams.color = color;
+				//	materialParams.emissive = 0xff0000;
+				//	override = true;
+				//	log = true;
+				//}
+
+				log = true;
+
 				switch(shader.type) {
+					case 7:
+						if (part.flags & 0x20|0x40) { // Decal
+							//materialParams.color = color;
+							//materialParams.emissive = emissive;
+							//override = true;
+							switch(staticTextureCount) {
+								case 1:
+									materialParams.useDecal = true;
+									textureLookup.push('map');
+									break;
+							}
+						}
+						else if (part.flags & 0x10) { // Glow Decal?
+							//override = true;
+							materialParams.useDecal = true;
+							//textureLookup.push('map');
+							//textureLookup.push('alphaMap');
+							//textureLookup.push('decalGlowMap');
+							//textureLookup.push('decalGlowMap');
+							//textureLookup.push('decalGlowMap');
+							materialParams.color = color;
+							materialParams.emissive = emissive;
+						} else {
+							switch(staticTextureCount) {
+								case 1:
+
+									break;
+								case 3:
+									textureLookup.push('map');
+									textureLookup.push('gearstackMap');
+									textureLookup.push('normalMap');
+									//override = true;
+									materialParams.useDetail = false;
+									break;
+								case 5:
+									//textureLookup.push('detailMap');
+									//textureLookup.push('map');
+									//textureLookup.push('gearstackMap');
+									//textureLookup.push('normalMap');
+									//textureLookup.push('detailNormalMap');
+									 textureLookup.push('map');
+									textureLookup.push('detailMap');
+									textureLookup.push('normalMap');
+									textureLookup.push('detailNormalMap');
+									textureLookup.push('scratchMap');
+									//override = true;
+									break;
+							}
+						}
+						break;
+				}
+
+				switch(/*shader.type*/-1) {
+					case -1: break;
 					case 7:
 						materialParams.map = textures.map;
 						materialParams.normalMap = textures.normalMap;
@@ -1364,7 +1716,10 @@ Object.assign(THREE.TGXLoader.prototype, {
 						materialParams.envMap = textures.envMap;
 						copyGearDyeParams(gearDye, materialParams);
 						override = staticTextureCount > 0;
-						log = true;
+
+						materialParams.useAlphaTest = (part.flags & 0x8) != 0;
+
+						//log = true;
 
 						switch(staticTextureCount) {
 							case 0:
@@ -1377,8 +1732,8 @@ Object.assign(THREE.TGXLoader.prototype, {
 								break;
 							case 1:
 								if (part.flags & 0x40) {
-									materialParams.map = false;
-									materialParams.normalMap = false;
+									materialParams.map = null;
+									materialParams.normalMap = null;
 									materialParams.gearstackMap = null;
 									textureLookup.push('detailDecalMap');
 									override = true;
@@ -1389,19 +1744,29 @@ Object.assign(THREE.TGXLoader.prototype, {
 									textureLookup.push('detailDecalMap');
 									log = true;
 								}
+								else if (part.flags & 0x10) { // PinLight/Glow?
+									// The Bandwagon
+									materialParams.map = null;
+									materialParams.normalMap = null;
+									materialParams.gearstackMap = null;
+									textureLookup.push('map');
+									//materialParams.emissive = 0x00ff00;
+									//log = true;
+								}
 								else /*if (part.flags & 0x10)*/ { // Cubemap
 									//materialParams.map = false;
 									//materialParams.normalMap = false;
 									//materialParams.gearstackMap = null;
 									//textureLookup.push('cubeMap');
 									//override = true;
+									log = true;
 								}
 								//else {
 								//	materialParams.color = color;
 									//materialParams.emissive = emissive;
 								//	log = true;
 								//}
-								log = true;
+								//log = true;
 								break;
 							case 2:
 								override = true;
@@ -1498,8 +1863,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 					case 8: // EmissiveMap
 						// Vex Mythoclast
 						//copyGearDyeParams(gearDye, materialParams);
-						materialParams.color = color;
-						materialParams.emissive = 0xffffff;//emissive;
+						//materialParams.color = color;
+						//materialParams.emissive = 0xffffff;//emissive;
+						//materialParams.emissive = this.usePrimaryColor ? this.primaryColor : this.secondaryColor;
 						//materialParams.emissiveIntensity = 1;
 						switch(staticTextureCount) {
 							case 0:
@@ -1508,6 +1874,11 @@ Object.assign(THREE.TGXLoader.prototype, {
 								break;
 							case 1:
 								textureLookup.push('emissiveMap');
+								break;
+							case 2:
+								textureLookup.push('alphaMap');
+								materialParams.useAlphaTest = true;
+								materialParams.transparent = true;
 								break;
 							default:
 								console.warn('UnknownShaderTypeLength', shader);
@@ -1639,8 +2010,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 				//	materialParams.color = color;
 				//	materialParams.emissive = emissive;
 				//} else {
-					log = false;
+					//log = false;
 				if (!debugMode) {
+					log = false;
 					override = false;
 				}
 				//}
@@ -1654,12 +2026,13 @@ Object.assign(THREE.TGXLoader.prototype, {
 						"\n\tGearDye:", gearDye,
 						"\n\tTextures:", textures
 					);
-					console.log(
-						"%c #"+new THREE.Color(gearDye.primaryColor).getHexString()
-						+" %c #"+new THREE.Color(gearDye.secondaryColor).getHexString(),
-						"border-left: 14px solid #"+new THREE.Color(gearDye.primaryColor).getHexString()+';',
-						"border-left: 14px solid #"+new THREE.Color(gearDye.secondaryColor).getHexString()+';'
-					);
+					logColors([gearDye.primaryColor, gearDye.secondaryColor, gearDye.wearColor]);
+					//console.log(
+					//	"%c #"+new THREE.Color(gearDye.primaryColor).getHexString()
+					//	+" %c #"+new THREE.Color(gearDye.secondaryColor).getHexString(),
+					//	"border-left: 14px solid #"+new THREE.Color(gearDye.primaryColor).getHexString()+';',
+					//	"border-left: 14px solid #"+new THREE.Color(gearDye.secondaryColor).getHexString()+';'
+					//);
 
 					for (var i=0; i<staticTextureIds.length; i++) {
 						var staticTextureId = staticTextureIds[i];
@@ -1694,9 +2067,10 @@ Object.assign(THREE.TGXLoader.prototype, {
 					materialParams[textureId] = staticTexture;
 				}
 
-				if (!override) return false;
+				//console.log('MaterialParams', materialParams, "\n\n");
+				console.log('MaterialParamsAlphaTest', materialParams.useAlphaTest, part);
 
-				if (log) console.log('MaterialParams', materialParams, "\n\n");
+				//if (!override) return false;
 				return new THREE.TGXMaterial(materialParams);
 				//return new THREE.MeshPhongMaterial(materialParams);
 			} else {
@@ -1765,7 +2139,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 				logName = texture.name+(src && src.indexOf('blob') != -1 ? ' '+src : '');
 			}
 
-			console.log(textureId+': '+logName, texture);
+			console.log("\t"+textureId+': '+logName);
 
 			if (src && src.indexOf('blob') != -1) {
 				var canvas = document.createElement('canvas');
@@ -1780,7 +2154,20 @@ Object.assign(THREE.TGXLoader.prototype, {
 		}
 
 		function logImageSrc(src) {
-			console.log('%c  ', 'font-size: 50px; background: url("'+src+'") center no-repeat; background-size: contain; border: 1px solid;');
+			console.log("\t\t"+'%c  ', 'font-size: 50px; background: url("'+src+'") center no-repeat; background-size: contain; border: 1px solid;');
+		}
+
+		function logColors(colors) {
+			var format = [];
+			var args = [];
+			for (var i=0; i<colors.length; i++) {
+				var color = colors[i];
+				if (!color) continue;
+				color = new THREE.Color(color);
+				format.push("%c #"+color.getHexString());
+				args.push("border-left: 14px solid #"+color.getHexString()+';');
+			}
+			console.log.apply(null, [format.join(' ')].concat(args));
 		}
 
 		// Spasm.Skeleton.prototype.onLoadSkeletonSuccess
@@ -2018,7 +2405,6 @@ Object.assign(THREE.TGXLoader.prototype, {
 						hash: dye.hash,
 						investmentHash: dye.investment_hash,
 						slotTypeIndex: dye.slot_type_index,
-						variant: dye.variant,
 
 						diffuse: gearDyeTextures.diffuse ? gearDyeTextures.diffuse.texture : null,
 						normal: gearDyeTextures.normal ? gearDyeTextures.normal.texture : null,
@@ -2056,31 +2442,54 @@ Object.assign(THREE.TGXLoader.prototype, {
 							//gearDye.shininess = spec[1];
 							//gearDye.reflectivity = spec[1];
 							//gearDye.shininess = dye.material_properties.subsurface_scattering_strength[0];
+
+							logColors([gearDye.primaryColor, gearDye.secondaryColor]);
 							break;
 						case 'destiny2':
-							gearDye.primaryColor = new THREE.Color().fromArray(dyeMat.primary_albedo_tint);//.primary_material_params;
-							gearDye.secondaryColor = new THREE.Color().fromArray(dyeMat.secondary_albedo_tint);//.secondary_material_params;
+							gearDye.primaryColor = new THREE.Color().fromArray(dyeMat.primary_albedo_tint);
+							// primary_material_params
+							gearDye.secondaryColor = new THREE.Color().fromArray(dyeMat.secondary_albedo_tint);
+							// secondary_material_params
 							gearDye.wornColor = new THREE.Color().fromArray(dyeMat.worn_albedo_tint);
+							// worn_material_parameters
 
-							var spec = dye.material_properties.specular_properties;
+							var spec = dyeMat.specular_properties;
+							console.log('MatSpecularParams', dyeMat.specular_properties);
 							//gearDye.specular = new THREE.Color(spec[0], spec[0], spec[0]);
 							//gearDye.shininess = spec[1];
 							//gearDye.specular = new THREE.Color(0xffffff);
 							//gearDye.shininess = 32;
 
-							var emissive = dye.material_properties.emissive_tint_color_and_intensity_bias;
-							//gearDye.emissive = new THREE.Color(emissive[1], emissive[2], emissive[3]);
-							//gearDye.emissiveIntensity = emissive[0];
-							//gearDye.emissive = new THREE.Color().fromArray(new THREE.Vector3().fromArray(dye.material_properties.emissive_tint_color_and_intensity_bias));
-							//gearDye.shininess = dye.material_properties.subsurface_scattering_strength_and_emissive[0];
-
-							gearDye.detailDiffuseTransform = dye.material_properties.detail_diffuse_transform;
-							gearDye.detailNormalTransform = dye.material_properties.detail_normal_transform;
+							gearDye.detailDiffuseTransform = dyeMat.detail_diffuse_transform;
+							gearDye.detailNormalTransform = dyeMat.detail_normal_transform;
 
 							// Physically Based Rendering
 							// emissive_pbr_params
+							// emissive_tint_color_and_intensity_bias
 							// lobe_pbr_params
 							// tint_pbr_params
+
+							//gearDye.metalness = 1;//dyeMat.tint_pbr_params[0];
+
+							//if (i == 0) gearDye.metalness = 0;
+
+							// spec_aa_xform
+
+							gearDye.primaryParams = dyeMat.primary_material_params;
+							//gearDye.primaryParamsAdvanced = dyeMat.primary_material_advanced_params;
+							gearDye.secondaryParams = dyeMat.secondary_material_params;
+							gearDye.wornParams = dyeMat.worn_material_parameters;
+
+							//if (dyeMat.primary_material_advanced_params[0] == -1) {
+							//	gearDye.useDye = false;
+							//}
+
+
+							console.warn('PrimaryMatParams', dyeMat.primary_material_params, dyeMat.primary_material_advanced_params);
+							console.warn('SecondaryMatParams', dyeMat.secondary_material_params);
+							console.warn('WornMatParams', dyeMat.worn_material_parameters);
+
+							logColors([gearDye.primaryColor, gearDye.secondaryColor, gearDye.wornColor]);
 							break;
 					}
 
@@ -2118,9 +2527,10 @@ Object.assign(THREE.TGXLoader.prototype, {
 				}
 				for (var j=0; j<dyes.length; j++) {
 					var dye = dyes[j];
+					//console.log('DyeSlotIndex', j, dye.slotTypeIndex, dye);
 					//if (dyeType == 'lockedDyes' && ignoreLockedDyes && resolvedDyes[dye.slotTypeIndex]) continue;
-					//resolvedDyes[dye.slotTypeIndex] = dye;
-					resolvedDyes[j] = dye;
+					resolvedDyes[dye.slotTypeIndex] = dye;
+					//resolvedDyes[j] = dye;
 				}
 			}
 
@@ -2170,6 +2580,7 @@ Object.assign(THREE.TGXLoader.prototype, {
 				var partOffsets = [];
 
 				var partLimit = renderMesh.stage_part_offsets[4];//renderMesh.stage_part_list.length;
+				//var partLimit = renderMesh.stage_part_offsets[8];//renderMesh.stage_part_list.length;
 				for (var i=0; i<partLimit; i++) {
 					partOffsets.push(i);
 				}
@@ -2177,6 +2588,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 				for (var i=0; i<partOffsets.length; i++) {
 					var partOffset = partOffsets[i];
 					var stagePart = renderMesh.stage_part_list[partOffset];
+
+					//if (stagesToRender.indexOf(partOffset) == -1) continue;
+
 					//console.log('StagePart['+renderMeshIndex+':'+partOffset+']',
 					//	"\n\tLOD:", stagePart.lod_category,
 					//	"\n\tShader:", stagePart.shader,
@@ -2213,6 +2627,9 @@ Object.assign(THREE.TGXLoader.prototype, {
 
 		// Spasm.RenderMesh.prototype.getAttributes
 		function parseVertexBuffers(tgxBin, renderMesh) {
+			if (renderMesh.stage_part_vertex_stream_layout_definitions.length > 1) {
+				console.warn('Multiple Stage Part Vertex Layout Definitions', renderMesh.stage_part_vertex_stream_layout_definitions);
+			}
 			var stagePartVertexStreamLayoutDefinition = renderMesh.stage_part_vertex_stream_layout_definitions[0];
 			var formats = stagePartVertexStreamLayoutDefinition.formats;
 
