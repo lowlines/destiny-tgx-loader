@@ -1,4 +1,4 @@
-# TGXLoader (2.0)
+# TGX Loader (2.0)
 
 Load Destiny model assets from Bungie.net with the BungieNetPlatform APIs.
 
