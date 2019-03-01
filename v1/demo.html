@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bungie TGXLoader for three.js</title>
+    <script
+      src="https://threejs.org/build/three.js"
+      type="text/javascript"
+    ></script>
+    <script
+      src="https://threejs.org/examples/js/controls/OrbitControls.js"
+      type="text/javascript"
+    ></script>
+    <script src="three.tgxloader.js" type="text/javascript"></script>
+    <style>
+      body {
+        margin: 0;
+        background: #ccc;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      var camera, scene, renderer, controls;
+      var mesh;
+
+      var game = "destiny2";
+
+      // var itemHash = 1274330687; // Gjallarhorn
+      var itemHash = 4124984448; // Hard Light (Destiny 2)
+      var itemCategoryHashes = [];
+
+      init();
+      animate();
+
+      function loadGear() {
+        THREE.TGXLoader.APIKey = "f4a1dfc1ea3e4096815898abea5afde2"; // https://www.bungie.net/en/Application
+        THREE.TGXLoader.APIBasepath =
+          "https://lowlidev.com.au/destiny/api/request/d1/Platform/Destiny";
+        THREE.TGXLoader.Platform = "mobile";
+        THREE.TGXLoader.ManifestPath =
+          "https://lowlidev.com.au/destiny/api/gearasset/$itemHash?destiny";
+        THREE.TGXLoader.ManifestPath2 =
+          "https://lowlidev.com.au/destiny/api/gearasset/$itemHash?destiny2";
+        var loader = new THREE.TGXLoader();
+        var options = {
+          itemHash: itemHash,
+          game: game
+        };
+        loader.load(options, function(geometry, materials) {
+          console.log("LoadedItem", geometry, materials);
+          mesh = new THREE.Mesh(geometry, materials);
+          //   mesh.rotation.x = -((90 * Math.PI) / 180);
+          //   mesh.scale.set(500, 500, 500);
+
+          mesh.geometry.computeBoundingBox();
+          var bounds = mesh.geometry.boundingBox;
+
+          var isArmor = itemCategoryHashes.indexOf(20) != -1;
+          var isShip = itemCategoryHashes.indexOf(42) != -1;
+          var isSparrow = itemCategoryHashes.indexOf(43) != -1;
+          var isGhost = itemCategoryHashes.indexOf(39) != -1;
+          var isSword = itemCategoryHashes.indexOf(54) != -1;
+
+          var scale = 100;
+
+          var width = bounds.max.x - bounds.min.x;
+          var height = bounds.max.z - bounds.min.z;
+          var depth = bounds.max.y - bounds.min.y;
+
+          var toRadian = Math.PI / 180;
+
+          mesh.rotation.z = -180 * toRadian;
+
+          //   if (isArmor) {
+          //     mesh.rotation.z = -120 * toRadian;
+          //     scale = 50;
+          //   }
+          //   if (isGhost) {
+          //     scale = 250;
+          //   }
+          //   if (isShip) {
+          //     scale = 4;
+          //     mesh.rotation.z = -120 * toRadian;
+          //   }
+          //   if (isSparrow) {
+          //     scale = 20;
+          //     mesh.rotation.z = -130 * toRadian;
+          //   }
+          //   if (isSword) {
+          //     mesh.rotation.y = 90 * 1.1 * toRadian;
+          //     mesh.rotation.z = 0;
+
+          //     width = bounds.max.z - bounds.min.z;
+          //     height = bounds.max.x - bounds.min.x;
+          //     //depth = bounds.max.y-bounds.min.y;
+          //     mesh.position.x -= (width / 2) * 1.5 * scale;
+          //   }
+
+          mesh.scale.set(scale, scale, scale);
+          mesh.rotation.x = -90 * toRadian;
+
+          mesh.position.x += (bounds.min.x + width / 2) * scale;
+          mesh.position.y += -(bounds.min.z + height / 2) * scale;
+
+          scene.add(mesh);
+        });
+      }
+
+      function init() {
+        scene = new THREE.Scene();
+
+        camera = new THREE.PerspectiveCamera(
+          30,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          100000 //10000
+        );
+        camera.position.z = 100; //1000;
+        // camera.up.set(0, 0, 1);
+        scene.add(camera);
+
+        // Lights
+        var ambientLight = {
+          name: "AmbientLight",
+          type: "ambient",
+          color: 0xffffff,
+          intensity: 0.5
+        };
+        var frontLight = {
+          name: "FrontLight",
+          type: "point",
+          color: 0xffffff,
+          intensity: 0.2,
+          position: [0, 100, 300],
+          parent: "camera"
+        };
+        var backLight = {
+          name: "BackLight",
+          type: "point",
+          color: 0xffffff,
+          intensity: 0.2,
+          position: [0, 100, -300],
+          parent: "camera"
+        };
+        var spotLight = {
+          name: "SpotLight",
+          type: "point",
+          color: 0xffffff,
+          intensity: 0.8,
+          position: [-200, 1000, 0],
+          penumbra: 0.8,
+          parent: "camera"
+        };
+        var lights = [ambientLight, frontLight, backLight, spotLight];
+
+        switch (game) {
+          default:
+            ambientLight.intensity = 0.6;
+
+            frontLight.intensity = 0.2;
+            frontLight.position = [50, 100, 300];
+
+            backLight.intensity = 0.2;
+            backLight.position = [-50, 100, -300];
+
+            spotLight.intensity = 0.4;
+            spotLight.position = [-50, 300, -200];
+
+            var topLight = {
+              name: "TopLight",
+              type: "point",
+              color: 0xffffff,
+              intensity: 1,
+              position: [0, 300, 0],
+              parent: "camera"
+            };
+            lights.push(topLight);
+
+            var bottomLight = {
+              name: "BottomLight",
+              type: "point",
+              color: 0xffffff,
+              intensity: 1,
+              position: [0, -300, 0],
+              parent: "camera"
+            };
+            lights.push(bottomLight);
+            break;
+        }
+
+        for (var i = 0; i < lights.length; i++) {
+          var gameLight = lights[i];
+
+          var light, lightHelper;
+          var parent = gameLight.parent == "camera" ? camera : scene;
+          var color = gameLight.color ? gameLight.color : 0xffffff;
+          var intensity = gameLight.intensity ? gameLight.intensity : 1;
+          var distance = gameLight.distance ? gameLight.distance : 0;
+
+          if (gameLight.visible != undefined && !gameLight.visible) continue;
+
+          switch (gameLight.type) {
+            case "ambient":
+              light = new THREE.AmbientLight(color, intensity);
+              break;
+            case "point":
+              light = new THREE.PointLight(color, intensity, distance);
+              light.castShadow = true;
+              light.shadow.mapSize.width = 1024;
+              light.shadow.mapSize.height = 1024;
+              light.shadow.camera.far = 100;
+              //lightHelper = new THREE.PointLightHelper(light, 30);
+              break;
+            case "spot":
+              light = new THREE.SpotLight(color, intensity, distance);
+              if (gameLight.penumbra) light.penumbra = gameLight.penumbra;
+              //lightHelper = new THREE.SpotLightHelper(light);
+              break;
+          }
+          if (light) {
+            light.name = gameLight.name ? gameLight.name : "Light" + i;
+            if (gameLight.position)
+              light.position.fromArray(gameLight.position);
+            parent.add(light);
+          }
+          if (lightHelper && parent == scene) {
+            lightHelper.name = light.name + "Helper";
+            scene.add(lightHelper);
+            //lightHelpers.push(lightHelper);
+          }
+        }
+
+        renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: true,
+          preserveDrawingBuffer: true
+        });
+        renderer.setClearColor(0xffffff, 0);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        //
+        window.addEventListener("resize", onWindowResize, false);
+
+        // Controls
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.rotateSpeed = 2.0;
+        controls.zoomSpeed = 0.5;
+
+        controls.enableKeys = false;
+
+        // Free Rotation
+        controls.minPolarAngle = 0;
+        controls.maxPolarAngle = Math.PI;
+
+        // Fixed Rotation
+        // controls.minPolarAngle = Math.PI / 2;
+        // controls.maxPolarAngle = Math.PI / 2;
+
+        controls.addEventListener("change", function() {
+          //console.log(controls);
+          render();
+        });
+
+        var timeoutOut = null;
+        var direction = "";
+        var speed = 1;
+
+        function move() {
+          if (direction === "") return;
+
+          var vec = new THREE.Vector3();
+
+          switch (direction) {
+            case "ArrowUp":
+              vec.y += speed;
+              break;
+            case "ArrowDown":
+              vec.y -= speed;
+              break;
+            case "ArrowLeft":
+              vec.x -= speed;
+              break;
+            case "ArrowRight":
+              vec.x += speed;
+              break;
+          }
+          vec.applyEuler(camera.rotation);
+          mesh.position.x += vec.x;
+          mesh.position.y += vec.y;
+          mesh.position.z += vec.z;
+
+          if (timeoutOut) {
+            clearTimeout(timeoutOut);
+          }
+          timeoutOut = setTimeout(function() {
+            move();
+          }, 400);
+        }
+
+        window.addEventListener("keydown", function(e) {
+          direction = e.key;
+          move();
+        });
+        window.addEventListener("keyup", function(e) {
+          direction = "";
+        });
+
+        loadGear();
+      }
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+      function animate() {
+        requestAnimationFrame(animate);
+        render();
+        controls.update();
+      }
+      function render() {
+        if (mesh) {
+          //mesh.rotation.x += 0.005;
+          //mesh.rotation.y += 0.01;
+        }
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>

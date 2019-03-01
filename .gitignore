@@ -1,1 +1,4 @@
 config.codekit3
+node_modules
+v2/temp
+.vscode
